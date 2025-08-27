@@ -1,12 +1,7 @@
 #!/bin/bash
 
-# 脚本：restore.sh
-# 功能：自动恢复 /root/backup 中的最新备份文件
-# 兼容：Debian 12
-
 BACKUP_DIR="/root/backup"
 
-# 找到最新备份
 LATEST_BACKUP=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | head -n 1)
 
 if [ -z "$LATEST_BACKUP" ]; then
@@ -16,15 +11,14 @@ fi
 
 echo "准备恢复备份文件：$LATEST_BACKUP"
 
-# 用户确认
 read -p "是否继续恢复？这会覆盖已有文件 (y/n): " CONFIRM
 CONFIRM=$(echo "$CONFIRM" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+
 if [ "$CONFIRM" != "y" ]; then
     echo "已取消恢复"
     exit 0
 fi
 
-# 解压到根目录
 tar -xzvf "$LATEST_BACKUP" -C /
 
 if [ $? -eq 0 ]; then
