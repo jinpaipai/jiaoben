@@ -65,7 +65,6 @@ sysctl -p
 # 启动服务
 systemctl daemon-reload
 systemctl enable mihomo
-systemctl restart mihomo
 systemctl restart networking
 
 # 显示服务状态
