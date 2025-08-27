@@ -32,6 +32,7 @@ FILES_TO_BACKUP=(
     "/usr/bin/1panel-agent"
     "/usr/bin/1panel"
     "/usr/bin/1pctl"
+    "/root/.ssh"
     "/etc/systemd/system/nezha-dashboard.service"
     "/etc/systemd/system/nezha-agent.service"
     "/etc/systemd/system/nodepass.service"
