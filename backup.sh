@@ -23,19 +23,13 @@ FILES_TO_BACKUP=(
     "/opt/vault-data"
     "/etc/filebrowser.db"
     "/opt/nezha"
-    "/opt/1panel"
+    "/opt/1panel/apps"
+    "/opt/1panel/www"
     "/etc/localtime"
     "/etc/nodepass"
-    "/usr/bin/1panel-core"
-    "/usr/bin/1panel-agent"
-    "/usr/bin/1panel"
-    "/usr/bin/1pctl"
-    "/root/.ssh"
     "/etc/systemd/system/nezha-dashboard.service"
     "/etc/systemd/system/nezha-agent.service"
     "/etc/systemd/system/nodepass.service"
-    "/etc/systemd/system/1panel-agent.service"
-    "/etc/systemd/system/1panel-core.service"
 )
 
 # 日志：备份开始
