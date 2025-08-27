@@ -1,5 +1,6 @@
 #!/bin/bash
-# 一键安装最新版 frpc 到 Debian 12
+# 一键安装或升级最新版 frpc 到 Debian 12
+# 保留原有 frpc.toml 配置文件
 set -e
 
 INSTALL_DIR="/usr/local/frp"
@@ -22,40 +23,35 @@ echo "最新版本：$TAG"
 
 # 去掉前缀 'v'（如果存在）
 VER=${TAG#v}
-ARCH="linux_amd64"  # 你也可以改成 linux_arm64 或自适应判断
+
+# 自动判断架构
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64) ARCH="linux_amd64" ;;
+  aarch64) ARCH="linux_arm64" ;;
+  *) echo "不支持的架构: $ARCH"; exit 1 ;;
+esac
 
 TAR="frp_${VER}_${ARCH}.tar.gz"
 URL="https://github.com/fatedier/frp/releases/download/${TAG}/${TAR}"
 
-echo "正在下载 $TAR..."
+echo "下载 $TAR..."
 wget -q --show-progress "$URL" -O "/tmp/${TAR}"
 
 echo "解压并安装到 ${INSTALL_DIR}..."
-rm -rf "${INSTALL_DIR}"
 mkdir -p "${INSTALL_DIR}"
 tar -xzf "/tmp/${TAR}" -C /tmp
+# 只更新 frpc 二进制
 cp "/tmp/frp_${VER}_${ARCH}/frpc" "${INSTALL_DIR}/"
+# 如果不存在 frpc.toml，则生成默认配置
+if [[ ! -f "${INSTALL_DIR}/frpc.toml" ]]; then
+  cp "/tmp/frp_${VER}_${ARCH}/frpc.toml" "${INSTALL_DIR}/frpc.toml"
+fi
+# 始终生成最新的 example 文件
 cp "/tmp/frp_${VER}_${ARCH}/frpc.toml" "${INSTALL_DIR}/frpc.toml.example"
 rm -rf "/tmp/frp_${VER}_${ARCH}" "/tmp/${TAR}"
 
-# 如果配置文件缺失，则生成默认示例
-if [[ ! -f "${INSTALL_DIR}/frpc.toml" ]]; then
-  cat > "${INSTALL_DIR}/frpc.toml" <<EOF
-[common]
-server_addr = "x.x.x.x"
-server_port = 7000
-# token = "your_token"
-
-[[proxies]]
-name = "ssh"
-type = "tcp"
-local_ip = "127.0.0.1"
-local_port = 22
-remote_port = 6000
-EOF
-  echo "已生成默认配置：${INSTALL_DIR}/frpc.toml"
-fi
-
+# 创建 systemd 服务
 echo "创建 systemd 服务..."
 cat > "${SERVICE_FILE}" <<EOF
 [Unit]
@@ -72,15 +68,17 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 
+# 启用并启动服务
 echo "启用并启动 frpc 服务..."
 systemctl daemon-reload
 systemctl enable frpc
 systemctl restart frpc
 
-echo "===== 安装完成 ====="
+echo "===== 安装/升级完成 ====="
 echo "版本：${TAG}"
 echo "安装目录：${INSTALL_DIR}"
+echo "配置文件：${INSTALL_DIR}/frpc.toml"
+echo "参考示例文件：${INSTALL_DIR}/frpc.toml.example"
 echo "管理命令："
 echo "  systemctl status frpc"
 echo "  systemctl restart frpc"
-echo "配置文件：${INSTALL_DIR}/frpc.toml"
