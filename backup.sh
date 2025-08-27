@@ -2,11 +2,13 @@
 
 # 脚本：backup.sh
 # 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
+# 日志增强 + 完整备份验证
 # 兼容：Debian 12
 
 # 设置备份目标路径
 BACKUP_DIR="/root/backup"
 mkdir -p "$BACKUP_DIR"  # 如果目录不存在，自动创建
+LOG_FILE="$BACKUP_DIR/backup.log"
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
@@ -22,31 +24,46 @@ FILES_TO_BACKUP=(
     "/etc/filebrowser.db"
 )
 
+# 日志：备份开始
+echo "===============================" >> "$LOG_FILE"
+echo "备份开始：$(date)" >> "$LOG_FILE"
+
 # 检查文件是否存在，忽略不存在的文件
 EXISTING_FILES=()
-for FILE 在 "${FILES_TO_BACKUP[@]}"; do
+for FILE in "${FILES_TO_BACKUP[@]}"; do
     if [ -e "$FILE" ]; then
         EXISTING_FILES+=("$FILE")
     else
-        echo "警告：$FILE 不存在，已跳过"
+        echo "警告：$FILE 不存在，已跳过" | tee -a "$LOG_FILE"
     fi
 done
 
-# 执行打包
 if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
-    echo "没有可打包的文件或文件夹，脚本退出"
+    echo "没有可打包的文件或文件夹，脚本退出" | tee -a "$LOG_FILE"
     exit 1
 fi
 
-echo "正在打包文件..."
-tar -czvf "$BACKUP_FILE" "${EXISTING_FILES[@]}"
+# 执行打包
+echo "正在打包文件..." | tee -a "$LOG_FILE"
+tar -czvf "$BACKUP_FILE" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
 
+if [ $? -ne 0 ]; then
+    echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
+    exit 1
+fi
+
+# 验证备份完整性
+echo "验证备份完整性..." | tee -a "$LOG_FILE"
+tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "备份完成，文件保存为：$BACKUP_FILE"
+    echo "备份验证通过 ✅" | tee -a "$LOG_FILE"
 else
-    echo "备份失败，请检查权限和路径"
-    exit 1
+    echo "备份验证失败 ❌" | tee -a "$LOG_FILE"
 fi
+
+# 显示备份大小
+BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+echo "备份完成：$BACKUP_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
 # 备份轮转：保留最近 7 个备份
@@ -55,9 +72,11 @@ MAX_BACKUPS=7
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
-    # 删除最旧的备份
     OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$(($MAX_BACKUPS + 1)))
-    echo "删除旧备份文件："
-    echo "$OLDEST_BACKUPS"
+    echo "删除旧备份文件：" | tee -a "$LOG_FILE"
+    echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
 fi
+
+echo "备份结束：$(date)" >> "$LOG_FILE"
+echo "===============================" >> "$LOG_FILE"
