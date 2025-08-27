@@ -3,8 +3,8 @@ set -e
 
 # 检查 root 权限
 if [ "$(id -u)" -ne 0 ]; then
-  echo "请使用 root 权限运行此脚本"
-  exit 1
+    echo "请使用 root 权限运行此脚本"
+    exit 1
 fi
 
 echo "=== mihomo 自动安装脚本 ==="
@@ -12,37 +12,43 @@ echo "=== mihomo 自动安装脚本 ==="
 # 获取最新 release 所有下载链接
 echo "获取最新版本信息..."
 DOWNLOADS=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
-  | grep "browser_download_url" \
-  | grep "linux-amd64-v1-.*.gz" \
-  | cut -d '"' -f 4)
+    | grep "browser_download_url" \
+    | grep "linux-amd64-v1-.*.gz" \
+    | cut -d '"' -f 4)
 
 if [ -z "$DOWNLOADS" ]; then
-  echo "❌ 未找到 amd64-v1.gz 下载链接！"
-  exit 1
+    echo "❌ 未找到 amd64-v1.gz 下载链接！"
+    exit 1
 fi
 
-# 用 mapfile 读取下载链接到数组（解决子 shell 问题）
-mapfile -t URLS < <(echo "$DOWNLOADS")
+# 读取下载链接到数组，并去掉回车/空格
+mapfile -t URLS < <(echo "$DOWNLOADS" | tr -d '\r')
 
 # 列出可用版本
 echo "找到以下可用版本："
 for i in "${!URLS[@]}"; do
-  fname=$(basename "${URLS[i]}")
-  echo "[$((i+1))] $fname"
+    fname=$(basename "${URLS[i]}")
+    echo "[$((i+1))] $fname"
 done
 
-# 让用户选择版本
+# 用户选择
 read -rp "请输入要安装的版本编号 [默认 1]: " CHOICE
 CHOICE=${CHOICE:-1}
 
+# 验证输入是否为数字
+if ! [[ "$CHOICE" =~ ^[0-9]+$ ]]; then
+    echo "❌ 输入编号无效（必须是数字）"
+    exit 1
+fi
+
+# 验证范围
 if (( CHOICE < 1 || CHOICE > ${#URLS[@]} )); then
-  echo "❌ 输入编号无效"
-  exit 1
+    echo "❌ 输入编号超出范围"
+    exit 1
 fi
 
 SELECTED_URL="${URLS[$((CHOICE-1))]}"
 SELECTED_FILE=$(basename "$SELECTED_URL")
-
 echo "你选择安装：$SELECTED_FILE"
 sleep 1
 
@@ -54,8 +60,6 @@ wget -O /tmp/mihomo.gz "$SELECTED_URL"
 echo "正在解压并安装..."
 gunzip -f /tmp/mihomo.gz
 chmod +x /tmp/mihomo
-
-# 安装到 /usr/local/bin
 mv -f /tmp/mihomo /usr/local/bin/mihomo
 mkdir -p /etc/mihomo
 
@@ -102,7 +106,6 @@ systemctl status mihomo --no-pager
 read -rp "是否配置订阅更新功能？(y/N): " ENABLE_SUB
 if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
     read -rp "请输入你的订阅链接: " SUB_URL
-
     if [ -z "$SUB_URL" ]; then
         echo "❌ 订阅链接为空，跳过配置订阅更新"
         exit 0
@@ -141,7 +144,7 @@ if ! cmp -s "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"; then
         echo "\$(date '+%F %T') 配置有变化，reload 不支持，已 restart 服务" | tee -a "\$LOG_FILE"
     fi
 else
-    rm -f "\$CONFIG_FILE.tmp"
+    rm -f "\$CONFIG_FILE".tmp
     echo "\$(date '+%F %T') 配置无变化，无需 reload" | tee -a "\$LOG_FILE"
 fi
 EOF
@@ -176,3 +179,5 @@ EOF
     echo "=== 订阅更新功能已启用 ==="
     systemctl list-timers --all | grep mihomo-update
 fi
+
+echo "=== 安装与配置完成 ==="
