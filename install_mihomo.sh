@@ -9,28 +9,28 @@ fi
 
 echo "=== mihomo 自动安装脚本（镜像版）==="
 
-# 获取最新 release 所有下载链接（使用 ghproxy 镜像）
+# 获取最新 release JSON
 echo "获取最新版本信息..."
-DOWNLOADS=$(curl -s https://ghproxy.com/https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
-    | grep "browser_download_url" \
-    | grep "linux-amd64-v1-.*.gz" \
-    | cut -d '"' -f 4)
+RELEASE_JSON=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest)
+
+# 提取 linux-amd64 gz 链接
+DOWNLOADS=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "linux-amd64" | grep "\.gz" | cut -d '"' -f 4)
 
 if [ -z "$DOWNLOADS" ]; then
-    echo "❌ 未找到 amd64-v1.gz 下载链接！"
+    echo "❌ 未找到 amd64 gz 下载链接！"
     exit 1
 fi
 
-# 将下载链接加上 ghproxy 镜像前缀
+# 加国内镜像前缀
 MIRRORED_DOWNLOADS=""
 while read -r url; do
-    MIRRORED_DOWNLOADS+=$(echo "https://ghproxy.com/$url")$'\n'
+    MIRRORED_DOWNLOADS+=$(echo "https://github.jinpaipai.fun/$url")$'\n'
 done <<< "$DOWNLOADS"
 
-# 将下载链接存入数组
+# 存入数组
 URLS=()
 while IFS= read -r line; do
-    line="${line//$'\r'/}"   # 去掉回车
+    line="${line//$'\r'/}"
     if [[ -n "$line" ]]; then
         URLS+=("$line")
     fi
@@ -120,7 +120,7 @@ systemctl status mihomo --no-pager
 # 订阅更新功能
 # =======================
 read -rp "是否配置订阅更新功能？(y/N): " ENABLE_SUB
-if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
+if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; 键，然后
     read -rp "请输入你的订阅链接: " SUB_URL
     if [ -z "$SUB_URL" ]; then
         echo "❌ 订阅链接为空，跳过配置订阅更新"
