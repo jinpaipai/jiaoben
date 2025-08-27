@@ -21,16 +21,15 @@ if [ -z "$DOWNLOADS" ]; then
   exit 1
 fi
 
-# 将下载链接存到数组
+# 用 mapfile 读取下载链接到数组（解决子 shell 问题）
+mapfile -t URLS < <(echo "$DOWNLOADS")
+
+# 列出可用版本
 echo "找到以下可用版本："
-URLS=()
-i=1
-while read -r url; do
-  fname=$(basename "$url")
-  echo "[$i] $fname"
-  URLS+=("$url")
-  ((i++))
-done <<< "$DOWNLOADS"
+for i in "${!URLS[@]}"; do
+  fname=$(basename "${URLS[i]}")
+  echo "[$((i+1))] $fname"
+done
 
 # 让用户选择版本
 read -rp "请输入要安装的版本编号 [默认 1]: " CHOICE
@@ -56,7 +55,7 @@ echo "正在解压并安装..."
 gunzip -f /tmp/mihomo.gz
 chmod +x /tmp/mihomo
 
-# 如果旧版本存在则覆盖（不再额外备份）
+# 安装到 /usr/local/bin
 mv -f /tmp/mihomo /usr/local/bin/mihomo
 mkdir -p /etc/mihomo
 
@@ -109,7 +108,7 @@ if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
         exit 0
     fi
 
-    echo "创建 mihomo_subupdate 脚本..."
+    echo "创建 mihomo_subupdate.sh 脚本..."
     cat > /usr/local/bin/mihomo_subupdate.sh <<EOF
 #!/bin/bash
 # ================================================
@@ -133,9 +132,8 @@ if [ \$? -ne 0 ] || [ ! -s "\$CONFIG_FILE".tmp ]; then
 fi
 
 # 检查新旧配置是否有变化
-if ! cmp -s "\$CONFIG_FILE".tmp "\$CONFIG_FILE"; then
-    mv "\$CONFIG_FILE".tmp "\$CONFIG_FILE"
-    # 尝试 reload，如果失败再 fallback 到 restart
+if ! cmp -s "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"; then
+    mv "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"
     if systemctl reload mihomo 2>/dev/null; then
         echo "\$(date '+%F %T') 配置有变化，已 reload 服务" | tee -a "\$LOG_FILE"
     else
@@ -143,7 +141,7 @@ if ! cmp -s "\$CONFIG_FILE".tmp "\$CONFIG_FILE"; then
         echo "\$(date '+%F %T') 配置有变化，reload 不支持，已 restart 服务" | tee -a "\$LOG_FILE"
     fi
 else
-    rm -f "\$CONFIG_FILE".tmp
+    rm -f "\$CONFIG_FILE.tmp"
     echo "\$(date '+%F %T') 配置无变化，无需 reload" | tee -a "\$LOG_FILE"
 fi
 EOF
