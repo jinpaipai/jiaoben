@@ -1,10 +1,12 @@
 #!/bin/bash
 # 一键安装或升级最新版 frpc 到 Debian 12
 # 保留原有 frpc.toml 配置文件
+# 自动停止服务更新二进制，更新完成后重启服务
 set -e
 
 INSTALL_DIR="/usr/local/frp"
-SERVICE_FILE="/etc/systemd/system/frpc.service"
+SERVICE_NAME="frpc"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 # 确保以 root 权限执行
 if [[ $EUID -ne 0 ]]; then
@@ -26,7 +28,7 @@ VER=${TAG#v}
 
 # 自动判断架构
 ARCH=$(uname -m)
-case "$ARCH" in
+case "$ARCH" 在
   x86_64) ARCH="linux_amd64" ;;
   aarch64) ARCH="linux_arm64" ;;
   *) echo "不支持的架构: $ARCH"; exit 1 ;;
@@ -41,14 +43,25 @@ wget -q --show-progress "$URL" -O "/tmp/${TAR}"
 echo "解压并安装到 ${INSTALL_DIR}..."
 mkdir -p "${INSTALL_DIR}"
 tar -xzf "/tmp/${TAR}" -C /tmp
-# 只更新 frpc 二进制
+
+# 如果 frpc 服务正在运行，先停止
+if systemctl is-active --quiet ${SERVICE_NAME}; 键，然后
+    echo "停止 ${SERVICE_NAME} 服务以更新二进制..."
+    systemctl stop ${SERVICE_NAME}
+fi
+
+# 更新二进制文件
 cp "/tmp/frp_${VER}_${ARCH}/frpc" "${INSTALL_DIR}/"
+
 # 如果不存在 frpc.toml，则生成默认配置
 if [[ ! -f "${INSTALL_DIR}/frpc.toml" ]]; then
   cp "/tmp/frp_${VER}_${ARCH}/frpc.toml" "${INSTALL_DIR}/frpc.toml"
 fi
+
 # 始终生成最新的 example 文件
 cp "/tmp/frp_${VER}_${ARCH}/frpc.toml" "${INSTALL_DIR}/frpc.toml.example"
+
+# 清理临时文件
 rm -rf "/tmp/frp_${VER}_${ARCH}" "/tmp/${TAR}"
 
 # 创建 systemd 服务
@@ -69,10 +82,10 @@ WantedBy=multi-user.target
 EOF
 
 # 启用并启动服务
-echo "启用并启动 frpc 服务..."
+echo "启用并启动 ${SERVICE_NAME} 服务..."
 systemctl daemon-reload
-systemctl enable frpc
-systemctl restart frpc
+systemctl enable ${SERVICE_NAME}
+systemctl restart ${SERVICE_NAME}
 
 echo "===== 安装/升级完成 ====="
 echo "版本：${TAG}"
@@ -80,5 +93,5 @@ echo "安装目录：${INSTALL_DIR}"
 echo "配置文件：${INSTALL_DIR}/frpc.toml"
 echo "参考示例文件：${INSTALL_DIR}/frpc.toml.example"
 echo "管理命令："
-echo "  systemctl status frpc"
-echo "  systemctl restart frpc"
+echo "  systemctl status ${SERVICE_NAME}"
+echo "  systemctl restart ${SERVICE_NAME}"
