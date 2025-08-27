@@ -13,11 +13,10 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# 获取订阅链接：优先使用命令行参数
-if [ -n "$1" ]; then
-    NEW_SUB_URL="$1"
+# 获取订阅链接：优先使用环境变量 SUB_URL，其次交互式输入
+if [ -n "$SUB_URL" ]; then
+    NEW_SUB_URL="$SUB_URL"
 else
-    # 交互式输入
     read -rp "请输入新的订阅链接: " NEW_SUB_URL
 fi
 
@@ -69,6 +68,6 @@ chmod +x "$SUBUPDATE_SCRIPT"
 
 # 自动执行更新
 echo "自动更新订阅中..."
-sudo "$SUBUPDATE_SCRIPT"
+"$SUBUPDATE_SCRIPT"
 
 echo "✅ 订阅更新完成"
