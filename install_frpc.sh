@@ -1,57 +1,65 @@
 #!/bin/bash
-# 一键安装并配置 frpc for Debian 12
-# Author: ChatGPT
-
-# 下载地址（可改为自己需要的版本）
-FRP_VERSION="0.64.0"
-FRP_TAR="frp_${FRP_VERSION}_linux_amd64.tar.gz"
-DOWNLOAD_URL="https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/${FRP_TAR}"
+# 一键安装最新版 frpc 到 Debian 12
+set -e
 
 INSTALL_DIR="/usr/local/frp"
 SERVICE_FILE="/etc/systemd/system/frpc.service"
 
-# 检查是否 root
+# 确保以 root 权限执行
 if [[ $EUID -ne 0 ]]; then
-   echo "请使用 root 用户运行此脚本"
-   exit 1
+  echo "请使用 root 用户运行该脚本"
+  exit 1
 fi
 
-echo "==== 下载 frpc v${FRP_VERSION} ===="
-wget -q --show-progress $DOWNLOAD_URL -O /tmp/${FRP_TAR}
-if [[ $? -ne 0 ]]; then
-    echo "下载失败，请检查网络或版本号"
-    exit 1
+echo "获取 frp 最新 Release tag..."
+TAG=$(curl -fsSL https://api.github.com/repos/fatedier/frp/releases/latest \
+  | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+if [[ -z "$TAG" ]]; then
+  echo "无法获取最新版本号，退出"
+  exit 1
 fi
+echo "最新版本：$TAG"
 
-echo "==== 解压到 ${INSTALL_DIR} ===="
-mkdir -p ${INSTALL_DIR}
-tar -xzf /tmp/${FRP_TAR} -C /tmp
-cp /tmp/frp_${FRP_VERSION}_linux_amd64/frpc ${INSTALL_DIR}/
-cp /tmp/frp_${FRP_VERSION}_linux_amd64/frpc.toml ${INSTALL_DIR}/frpc.toml.example
-rm -rf /tmp/frp_${FRP_VERSION}_linux_amd64
-rm -f /tmp/${FRP_TAR}
+# 去掉前缀 'v'（如果存在）
+VER=${TAG#v}
+ARCH="linux_amd64"  # 你也可以改成 linux_arm64 或自适应判断
 
-# 如果配置文件不存在，则创建空文件
-if [[ ! -f ${INSTALL_DIR}/frpc.toml ]]; then
-    cat > ${INSTALL_DIR}/frpc.toml <<EOF
-# frpc.toml 示例配置
-serverAddr = "x.x.x.x"
-serverPort = 7000
+TAR="frp_${VER}_${ARCH}.tar.gz"
+URL="https://github.com/fatedier/frp/releases/download/${TAG}/${TAR}"
+
+echo "正在下载 $TAR..."
+wget -q --show-progress "$URL" -O "/tmp/${TAR}"
+
+echo "解压并安装到 ${INSTALL_DIR}..."
+rm -rf "${INSTALL_DIR}"
+mkdir -p "${INSTALL_DIR}"
+tar -xzf "/tmp/${TAR}" -C /tmp
+cp "/tmp/frp_${VER}_${ARCH}/frpc" "${INSTALL_DIR}/"
+cp "/tmp/frp_${VER}_${ARCH}/frpc.toml" "${INSTALL_DIR}/frpc.toml.example"
+rm -rf "/tmp/frp_${VER}_${ARCH}" "/tmp/${TAR}"
+
+# 如果配置文件缺失，则生成默认示例
+if [[ ! -f "${INSTALL_DIR}/frpc.toml" ]]; then
+  cat > "${INSTALL_DIR}/frpc.toml" <<EOF
+[common]
+server_addr = "x.x.x.x"
+server_port = 7000
+# token = "your_token"
 
 [[proxies]]
 name = "ssh"
 type = "tcp"
-localIP = "127.0.0.1"
-localPort = 22
-remotePort = 6000
+local_ip = "127.0.0.1"
+local_port = 22
+remote_port = 6000
 EOF
-    echo "已生成默认配置文件：${INSTALL_DIR}/frpc.toml"
+  echo "已生成默认配置：${INSTALL_DIR}/frpc.toml"
 fi
 
-echo "==== 创建 systemd 服务 ===="
-cat > ${SERVICE_FILE} <<EOF
+echo "创建 systemd 服务..."
+cat > "${SERVICE_FILE}" <<EOF
 [Unit]
-Description=frp client
+Description=frp client (frpc)
 After=network.target
 
 [Service]
@@ -64,14 +72,15 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 
-echo "==== 重新加载 systemd ===="
-systemctl daemon-reexec
+echo "启用并启动 frpc 服务..."
+systemctl daemon-reload
 systemctl enable frpc
 systemctl restart frpc
 
-echo "==== 安装完成 ===="
-echo "可使用以下命令管理 frpc："
-echo "  systemctl start frpc"
-echo "  systemctl stop frpc"
-echo "  systemctl restart frpc"
+echo "===== 安装完成 ====="
+echo "版本：${TAG}"
+echo "安装目录：${INSTALL_DIR}"
+echo "管理命令："
 echo "  systemctl status frpc"
+echo "  systemctl restart frpc"
+echo "配置文件：${INSTALL_DIR}/frpc.toml"
