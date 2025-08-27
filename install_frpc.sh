@@ -3,7 +3,7 @@
 # Author: ChatGPT
 
 # 下载地址（可改为自己需要的版本）
-FRP_VERSION="0.61.1"
+FRP_VERSION="0.64.0"
 FRP_TAR="frp_${FRP_VERSION}_linux_amd64.tar.gz"
 DOWNLOAD_URL="https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/${FRP_TAR}"
 
