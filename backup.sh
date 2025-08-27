@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 脚本：backup.sh
-# 功能：将指定文件夹和文件打包到 /root/backup 目录
+# 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
 # 兼容：Debian 12
 
 # 设置备份目标路径
@@ -45,4 +45,19 @@ if [ $? -eq 0 ]; then
     echo "备份完成，文件保存为：$BACKUP_FILE"
 else
     echo "备份失败，请检查权限和路径"
+    exit 1
+fi
+
+# ----------------------------
+# 备份轮转：保留最近 7 个备份
+# ----------------------------
+MAX_BACKUPS=7
+BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
+
+if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
+    # 删除最旧的备份
+    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$(($MAX_BACKUPS + 1)))
+    echo "删除旧备份文件："
+    echo "$OLDEST_BACKUPS"
+    rm -f $OLDEST_BACKUPS
 fi
