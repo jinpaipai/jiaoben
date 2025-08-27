@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 # 检查 root 权限
@@ -21,8 +21,15 @@ if [ -z "$DOWNLOADS" ]; then
     exit 1
 fi
 
-# 读取下载链接到数组，并去掉回车/空格
-mapfile -t URLS < <(echo "$DOWNLOADS" | tr -d '\r')
+# 将下载链接存入数组，并去掉回车和空格
+URLS=()
+while IFS= read -r line; do
+    line="${line//$'\r'/}"   # 去掉回车
+    line="${line%%[[:space:]]*}"  # 去掉多余空格
+    if [[ -n "$line" ]]; then
+        URLS+=("$line")
+    fi
+done <<< "$DOWNLOADS"
 
 # 列出可用版本
 echo "找到以下可用版本："
@@ -31,21 +38,21 @@ for i in "${!URLS[@]}"; do
     echo "[$((i+1))] $fname"
 done
 
-# 用户选择
-read -rp "请输入要安装的版本编号 [默认 1]: " CHOICE
-CHOICE=${CHOICE:-1}
-
-# 验证输入是否为数字
-if ! [[ "$CHOICE" =~ ^[0-9]+$ ]]; then
-    echo "❌ 输入编号无效（必须是数字）"
-    exit 1
-fi
-
-# 验证范围
-if (( CHOICE < 1 || CHOICE > ${#URLS[@]} )); then
-    echo "❌ 输入编号超出范围"
-    exit 1
-fi
+# 用户选择版本
+while true; do
+    read -rp "请输入要安装的版本编号 [默认 1]: " CHOICE
+    CHOICE="${CHOICE:-1}"
+    # 验证是否为数字
+    if ! [[ "$CHOICE" =~ ^[0-9]+$ ]]; then
+        echo "❌ 输入无效，请输入数字"
+        continue
+    fi
+    if (( CHOICE < 1 || CHOICE > ${#URLS[@]} )); then
+        echo "❌ 编号超出范围"
+        continue
+    fi
+    break
+done
 
 SELECTED_URL="${URLS[$((CHOICE-1))]}"
 SELECTED_FILE=$(basename "$SELECTED_URL")
@@ -114,9 +121,7 @@ if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
     echo "创建 mihomo_subupdate.sh 脚本..."
     cat > /usr/local/bin/mihomo_subupdate.sh <<EOF
 #!/bin/bash
-# ================================================
 # Mihomo 配置自动更新脚本（只在有变化时 reload）
-# ================================================
 
 CONFIG_DIR="/etc/mihomo"
 CONFIG_FILE="\$CONFIG_DIR/config.yaml"
@@ -126,7 +131,6 @@ LOG_FILE="/var/log/mihomo_update.log"
 mkdir -p "\$CONFIG_DIR"
 touch "\$LOG_FILE"
 
-# 拉取订阅配置到临时文件
 curl -sSL "\$SUB_URL" -o "\$CONFIG_FILE".tmp
 if [ \$? -ne 0 ] || [ ! -s "\$CONFIG_FILE".tmp ]; then
     echo "\$(date '+%F %T') 配置更新失败（下载错误或文件为空）" | tee -a "\$LOG_FILE"
@@ -134,7 +138,6 @@ if [ \$? -ne 0 ] || [ ! -s "\$CONFIG_FILE".tmp ]; then
     exit 1
 fi
 
-# 检查新旧配置是否有变化
 if ! cmp -s "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"; then
     mv "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"
     if systemctl reload mihomo 2>/dev/null; then
@@ -144,7 +147,7 @@ if ! cmp -s "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"; then
         echo "\$(date '+%F %T') 配置有变化，reload 不支持，已 restart 服务" | tee -a "\$LOG_FILE"
     fi
 else
-    rm -f "\$CONFIG_FILE".tmp
+    rm -f "\$CONFIG_FILE.tmp"
     echo "\$(date '+%F %T') 配置无变化，无需 reload" | tee -a "\$LOG_FILE"
 fi
 EOF
