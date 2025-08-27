@@ -13,8 +13,14 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# 提示输入新的订阅链接
-read -rp "请输入新的订阅链接: " NEW_SUB_URL
+# 获取订阅链接：优先使用命令行参数
+if [ -n "$1" ]; then
+    NEW_SUB_URL="$1"
+else
+    # 交互式输入
+    read -rp "请输入新的订阅链接: " NEW_SUB_URL
+fi
+
 if [ -z "$NEW_SUB_URL" ]; then
     echo "❌ 订阅链接为空，操作取消"
     exit 1
