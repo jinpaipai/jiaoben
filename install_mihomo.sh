@@ -61,7 +61,6 @@ sysctl -p
 # 重新加载 systemd
 systemctl daemon-reexec
 systemctl enable mihomo
-systemctl restart mihomo
 systemctl restart networking
 
 echo "mihomo 已安装并启动完成 ✅"
