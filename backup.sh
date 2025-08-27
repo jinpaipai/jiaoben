@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # 脚本：backup.sh
-# 功能：将指定文件夹和文件打包到/root目录下的压缩包
+# 功能：将指定文件夹和文件打包到 /root/backup 目录
 # 兼容：Debian 12
 
 # 设置备份目标路径
-BACKUP_DIR="/root"
+BACKUP_DIR="/root/backup"
+mkdir -p "$BACKUP_DIR"  # 如果目录不存在，自动创建
+
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 
@@ -22,7 +24,7 @@ FILES_TO_BACKUP=(
 
 # 检查文件是否存在，忽略不存在的文件
 EXISTING_FILES=()
-for FILE in "${FILES_TO_BACKUP[@]}"; do
+for FILE 在 "${FILES_TO_BACKUP[@]}"; do
     if [ -e "$FILE" ]; then
         EXISTING_FILES+=("$FILE")
     else
