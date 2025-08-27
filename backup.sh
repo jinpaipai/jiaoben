@@ -22,6 +22,10 @@ FILES_TO_BACKUP=(
     "/etc/sub-store"
     "/opt/vault-data"
     "/etc/filebrowser.db"
+    "/opt/nezha"
+    "/opt/1panel/apps"
+    "/opt/1panel/www"
+    "/etc/localtime"
 )
 
 # 日志：备份开始
