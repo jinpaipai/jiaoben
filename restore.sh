@@ -5,7 +5,9 @@
 # 兼容：Debian 12
 
 BACKUP_DIR="/root/backup"
-LATEST_BACKUP=$(ls -1t $BACKUP_DIR/backup_*.tar.gz 2>/dev/null | head -n 1)
+
+# 找到最新备份
+LATEST_BACKUP=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | head -n 1)
 
 if [ -z "$LATEST_BACKUP" ]; then
     echo "❌ 没有找到备份文件，请确认 $BACKUP_DIR 中存在 backup_xxx.tar.gz"
@@ -14,9 +16,10 @@ fi
 
 echo "准备恢复备份文件：$LATEST_BACKUP"
 
-# 询问是否继续
+# 用户确认
 read -p "是否继续恢复？这会覆盖已有文件 (y/n): " CONFIRM
-if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+CONFIRM=$(echo "$CONFIRM" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+if [ "$CONFIRM" != "y" ]; then
     echo "已取消恢复"
     exit 0
 fi
