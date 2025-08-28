@@ -122,14 +122,13 @@ systemctl status mihomo --no-pager
 read -rp "是否配置订阅更新功能？(y/N): " ENABLE_SUB
 if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
     read -rp "请输入你的订阅链接: " SUB_URL
+
     if [ -z "$SUB_URL" ]; then
         echo "❌ 订阅链接为空，跳过配置订阅更新"
     else
         echo "创建 mihomo_subupdate.sh 脚本..."
         cat > /usr/local/bin/mihomo_subupdate.sh <<'EOF'
 #!/bin/bash
-# Mihomo 配置自动更新脚本（只在有变化时 reload）
-
 CONFIG_DIR="/etc/mihomo"
 CONFIG_FILE="$CONFIG_DIR/config.yaml"
 SUB_URL="__SUB_URL__"
