@@ -4,9 +4,8 @@
 
 set -e
 
-# GitHub 镜像前缀
 MIRROR="https://github.jinpaipai.fun/https://github.com"
-REPO="MetaCubeX/mihomo"
+API="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
 INSTALL_DIR="/data/clash"
 TASK_DIR="$HOME/.shortcuts/tasks"
 
@@ -19,33 +18,51 @@ case "$ARCH" in
     i*86)      FILE_KEY="android-386" ;;
     *) echo "❌ 未知架构: $ARCH"; exit 1 ;;
 esac
-
 echo "[INFO] 检测到架构: $ARCH -> $FILE_KEY"
 
-# 获取最新 release tag（兼容 Termux）
-TAG=$(curl -sL "$MIRROR/$REPO/releases/latest" | grep -o 'releases/tag/[^"]*' | sed 's#.*/##' | head -n1)
-if [ -z "$TAG" ]; then
-    echo "❌ 获取最新版本失败"; exit 1
+# 获取最新 release JSON
+echo "[INFO] 正在获取最新版本信息..."
+JSON=$(curl -sL "$API")
+
+TAG=$(echo "$JSON" | grep '"tag_name":' | head -n1 | cut -d '"' -f4)
+if [ -z "$TAG" ]; 键，然后
+    echo "❌ 获取版本失败"; exit 1
 fi
 echo "[INFO] 最新版本: $TAG"
 
-# 拼接下载地址
-ASSET_URL="$MIRROR/$REPO/releases/download/$TAG/mihomo-$FILE_KEY-$TAG.tar.gz"
-TMP_TAR="/tmp/mihomo.tar.gz"
+# 找到合适的下载链接
+ASSET_URL=$(echo "$JSON" | grep "browser_download_url" | grep "$FILE_KEY" | cut -d '"' -f4 | head -n1)
+if [ -z "$ASSET_URL" ]; then
+    echo "❌ 未找到匹配的内核文件"; exit 1
+fi
+# 替换为镜像
+ASSET_URL="$MIRROR/${ASSET_URL#https://github.com/}"
 
 echo "[INFO] 正在下载: $ASSET_URL"
-curl -L --fail -o "$TMP_TAR" "$ASSET_URL"
+TMP_FILE="/tmp/mihomo_download"
+curl -L --fail -o "$TMP_FILE" "$ASSET_URL"
 
 # 安装目录
 su -c "mkdir -p $INSTALL_DIR"
 
-# 解压并安装
-su -c "tar -xzf $TMP_TAR -C $INSTALL_DIR"
-# 有的压缩包解压出来叫 mihomo-xxx，这里统一重命名
-BIN_PATH=$(find "$INSTALL_DIR" -type f -name "mihomo*" | head -n1)
+# 判断压缩格式并解压
+if tar -tzf "$TMP_FILE" >/dev/null 2>&1; then
+    echo "[INFO] 解压 tar.gz..."
+    su -c "tar -xzf $TMP_FILE -C $INSTALL_DIR"
+    BIN_PATH=$(find "$INSTALL_DIR" -type f -name "mihomo*" | head -n1)
+elif gzip -t "$TMP_FILE" >/dev/null 2>&1; then
+    echo "[INFO] 解压 gz..."
+    su -c "gzip -d -c $TMP_FILE > $INSTALL_DIR/mihomo"
+    BIN_PATH="$INSTALL_DIR/mihomo"
+else
+    echo "❌ 未知文件格式"
+    exit 1
+fi
+
+# 统一改名
 su -c "mv $BIN_PATH $INSTALL_DIR/mihomo"
 su -c "chmod +x $INSTALL_DIR/mihomo"
-rm -f "$TMP_TAR"
+rm -f "$TMP_FILE"
 
 echo "[INFO] Mihomo 已安装到 $INSTALL_DIR/mihomo ✅"
 
@@ -75,7 +92,7 @@ echo "mihomo 已停止"
 EOF
 chmod +x "$TASK_DIR/stop_mihomo.sh"
 
-# 交互输入订阅链接
+# 输入订阅链接
 read -p "请输入你的订阅链接: " SUB_LINK
 
 # update_mihomo.sh
@@ -89,7 +106,6 @@ echo "[INFO] 开始更新订阅..."
 
 if su -c "curl -L --fail -o \$TMP_FILE \$CONFIG_URL"; then
     su -c "mv \$TMP_FILE \$CONFIG_DIR/config.yaml"
-    # 覆写 tun.stack
     su -c "sed -i 's/stack: system/stack: gvisor/' \$CONFIG_DIR/config.yaml"
     echo "[INFO] 配置已更新 ✅"
 else
