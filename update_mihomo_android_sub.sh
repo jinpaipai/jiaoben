@@ -1,9 +1,18 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# update_mihomo_android_sub.sh - 修改 update_mihomo.sh 中的订阅链接并更新订阅，重启 Mihomo
+# update_mihomo_android_sub.sh - 修改 update_mihomo.sh 中的订阅链接并更新订阅，自动使用 root 重启 Mihomo
 
 UPDATE_SCRIPT="$HOME/.shortcuts/tasks/update_mihomo.sh"
 CONFIG_DIR="/data/clash"
 TMP_FILE="$CONFIG_DIR/config.yaml.tmp"
+
+# -----------------------------
+# 自动提升权限
+# -----------------------------
+if [ "$(id -u)" -ne 0 ]; then
+    echo "[INFO] 当前非 root，尝试使用 su 提升权限..."
+    exec su -c "bash $0 $*"
+    exit 0
+fi
 
 # -----------------------------
 # 检查 update_mihomo.sh 是否存在
@@ -32,13 +41,13 @@ echo "[INFO] 已更新 $UPDATE_SCRIPT 中的订阅链接 ✅"
 # 更新订阅配置
 # -----------------------------
 echo "[INFO] 开始更新订阅..."
-if su -c "curl -L -k --fail -o $TMP_FILE $NEW_SUB_LINK"; then
-    su -c "mv $TMP_FILE $CONFIG_DIR/config.yaml"
-    su -c "sed -i 's/stack: system/stack: gvisor/' $CONFIG_DIR/config.yaml"
+if curl -L --fail -o "$TMP_FILE" "$NEW_SUB_LINK"; then
+    mv "$TMP_FILE" "$CONFIG_DIR/config.yaml"
+    sed -i 's/stack: system/stack: gvisor/' "$CONFIG_DIR/config.yaml"
     echo "[INFO] 配置已更新 ✅"
 else
     echo "[ERROR] 下载失败 ❌ 保留旧配置"
-    su -c "rm -f $TMP_FILE"
+    rm -f "$TMP_FILE"
     exit 1
 fi
 
@@ -46,8 +55,8 @@ fi
 # 重启 Mihomo
 # -----------------------------
 if command -v killall >/dev/null 2>&1; then
-    su -c "killall -9 mihomo 2>/dev/null"
-    su -c "nohup /data/clash/mihomo -d /data/clash/ >/dev/null 2>&1 &"
+    killall -9 mihomo 2>/dev/null
+    nohup /data/clash/mihomo -d /data/clash/ >/dev/null 2>&1 &
     echo "[INFO] Mihomo 已重启 ✅"
 else
     echo "[WARN] 未找到 killall 命令，请手动重启 Mihomo"
