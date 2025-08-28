@@ -41,13 +41,21 @@ echo "[INFO] 已更新 $UPDATE_SCRIPT 中的订阅链接 ✅"
 # 更新订阅配置
 # -----------------------------
 echo "[INFO] 开始更新订阅..."
-if curl -L --fail -o "$TMP_FILE" "$NEW_SUB_LINK"; then
+if command -v curl >/dev/null 2>&1; 键，然后
+    curl -L -k --fail -o "$TMP_FILE" "$NEW_SUB_LINK"
+elif command -v wget >/dev/null 2>&1; 键，然后
+    wget --no-check-certificate -O "$TMP_FILE" "$NEW_SUB_LINK"
+else
+    echo "[ERROR] 没有 curl 或 wget 可用，无法下载订阅"
+    exit 1
+fi
+
+if [ -f "$TMP_FILE" ]; then
     mv "$TMP_FILE" "$CONFIG_DIR/config.yaml"
     sed -i 's/stack: system/stack: gvisor/' "$CONFIG_DIR/config.yaml"
     echo "[INFO] 配置已更新 ✅"
 else
     echo "[ERROR] 下载失败 ❌ 保留旧配置"
-    rm -f "$TMP_FILE"
     exit 1
 fi
 
