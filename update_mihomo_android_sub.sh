@@ -1,12 +1,12 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# update_mihomo_android_sub.sh - 修改 update_mihomo.sh 中的订阅链接并更新订阅，自动使用 root 重启 Mihomo
+# update_mihomo_android_sub.sh - 自动更新 Mihomo 订阅并重启
 
 UPDATE_SCRIPT="$HOME/.shortcuts/tasks/update_mihomo.sh"
 CONFIG_DIR="/data/clash"
 TMP_FILE="$CONFIG_DIR/config.yaml.tmp"
 
 # -----------------------------
-# 自动提升权限
+# 自动 root 提升
 # -----------------------------
 if [ "$(id -u)" -ne 0 ]; then
     echo "[INFO] 当前非 root，尝试使用 su 提升权限..."
@@ -23,7 +23,7 @@ if [ ! -f "$UPDATE_SCRIPT" ]; then
 fi
 
 # -----------------------------
-# 交互输入新的订阅链接
+# 输入新的订阅链接
 # -----------------------------
 read -p "请输入新的订阅链接: " NEW_SUB_LINK
 if [ -z "$NEW_SUB_LINK" ]; then
@@ -32,7 +32,7 @@ if [ -z "$NEW_SUB_LINK" ]; then
 fi
 
 # -----------------------------
-# 替换 update_mihomo.sh 中的 CONFIG_URL
+# 更新 update_mihomo.sh 中 CONFIG_URL
 # -----------------------------
 sed -i "s|^CONFIG_URL=.*|CONFIG_URL=\"$NEW_SUB_LINK\"|" "$UPDATE_SCRIPT"
 echo "[INFO] 已更新 $UPDATE_SCRIPT 中的订阅链接 ✅"
@@ -41,12 +41,12 @@ echo "[INFO] 已更新 $UPDATE_SCRIPT 中的订阅链接 ✅"
 # 更新订阅配置
 # -----------------------------
 echo "[INFO] 开始更新订阅..."
-if command -v curl >/dev/null 2>&1; 键，然后
-    curl -L -k --fail -o "$TMP_FILE" "$NEW_SUB_LINK"
-elif command -v wget >/dev/null 2>&1; 键，然后
+if command -v wget >/dev/null 2>&1; then
     wget --no-check-certificate -O "$TMP_FILE" "$NEW_SUB_LINK"
+elif command -v curl >/dev/null 2>&1; then
+    curl -L -k --fail -o "$TMP_FILE" "$NEW_SUB_LINK"
 else
-    echo "[ERROR] 没有 curl 或 wget 可用，无法下载订阅"
+    echo "[ERROR] Termux 中没有 wget 或 curl，无法下载订阅"
     exit 1
 fi
 
