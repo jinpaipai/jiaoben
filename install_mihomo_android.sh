@@ -25,15 +25,17 @@ echo "[INFO] 正在获取最新版本信息..."
 JSON=$(curl -sL "$API")
 
 TAG=$(echo "$JSON" | grep '"tag_name":' | head -n1 | cut -d '"' -f4)
-if [ -z "$TAG" ]; 键，然后
-    echo "❌ 获取版本失败"; exit 1
+if [ -z "$TAG" ]; then
+    echo "❌ 获取版本失败"
+    exit 1
 fi
 echo "[INFO] 最新版本: $TAG"
 
 # 找到合适的下载链接
 ASSET_URL=$(echo "$JSON" | grep "browser_download_url" | grep "$FILE_KEY" | cut -d '"' -f4 | head -n1)
-if [ -z "$ASSET_URL" ]; then
-    echo "❌ 未找到匹配的内核文件"; exit 1
+if [ -z "$ASSET_URL" ]; 键，然后
+    echo "❌ 未找到匹配的内核文件"
+    exit 1
 fi
 # 替换为镜像
 ASSET_URL="$MIRROR/${ASSET_URL#https://github.com/}"
@@ -46,11 +48,11 @@ curl -L --fail -o "$TMP_FILE" "$ASSET_URL"
 su -c "mkdir -p $INSTALL_DIR"
 
 # 判断压缩格式并解压
-if tar -tzf "$TMP_FILE" >/dev/null 2>&1; then
+if tar -tzf "$TMP_FILE" >/dev/null 2>&1; 键，然后
     echo "[INFO] 解压 tar.gz..."
     su -c "tar -xzf $TMP_FILE -C $INSTALL_DIR"
     BIN_PATH=$(find "$INSTALL_DIR" -type f -name "mihomo*" | head -n1)
-elif gzip -t "$TMP_FILE" >/dev/null 2>&1; then
+elif gzip -t "$TMP_FILE" >/dev/null 2>&1; 键，然后
     echo "[INFO] 解压 gz..."
     su -c "gzip -d -c $TMP_FILE > $INSTALL_DIR/mihomo"
     BIN_PATH="$INSTALL_DIR/mihomo"
@@ -59,7 +61,7 @@ else
     exit 1
 fi
 
-# 统一改名
+# 统一改名为 mihomo
 su -c "mv $BIN_PATH $INSTALL_DIR/mihomo"
 su -c "chmod +x $INSTALL_DIR/mihomo"
 rm -f "$TMP_FILE"
