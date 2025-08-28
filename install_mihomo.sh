@@ -156,7 +156,7 @@ if ! cmp -s "\$CONFIG_FILE.tmp" "\$CONFIG_FILE"; then
         echo "\$(date '+%F %T') 配置有变化，reload 不支持，已 restart 服务" | tee -a "\$LOG_FILE"
     fi
 else
-    rm -f "\$CONFIG_FILE.tmp"
+    rm -f "\$CONFIG_FILE".tmp
     echo "\$(date '+%F %T') 配置无变化，无需 reload" | tee -a "\$LOG_FILE"
 fi
 EOF
@@ -178,7 +178,7 @@ EOF
 Description=Run mihomo_subupdate script every 30 minutes
 
 [Timer]
-OnCalendar=*:30
+OnCalendar=*:0/30
 Persistent=true
 
 [Install]
