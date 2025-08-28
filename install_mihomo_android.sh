@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# install_mihomo.sh - 自动安装/更新 Mihomo 并配置快捷脚本
+# install_mihomo_android.sh - 自动安装/更新 Mihomo 并配置快捷脚本
 # 使用 GitHub 镜像: https://github.jinpaipai.fun
 
 set -e
@@ -22,8 +22,8 @@ esac
 
 echo "[INFO] 检测到架构: $ARCH -> $FILE_KEY"
 
-# 获取最新 release tag
-TAG=$(curl -sL "$MIRROR/$REPO/releases/latest" | grep -oP 'releases/tag/\K[^"]+')
+# 获取最新 release tag（兼容 Termux）
+TAG=$(curl -sL "$MIRROR/$REPO/releases/latest" | grep -o 'releases/tag/[^"]*' | sed 's#.*/##' | head -n1)
 if [ -z "$TAG" ]; then
     echo "❌ 获取最新版本失败"; exit 1
 fi
@@ -41,7 +41,9 @@ su -c "mkdir -p $INSTALL_DIR"
 
 # 解压并安装
 su -c "tar -xzf $TMP_TAR -C $INSTALL_DIR"
-su -c "mv $INSTALL_DIR/mihomo-* $INSTALL_DIR/mihomo"
+# 有的压缩包解压出来叫 mihomo-xxx，这里统一重命名
+BIN_PATH=$(find "$INSTALL_DIR" -type f -name "mihomo*" | head -n1)
+su -c "mv $BIN_PATH $INSTALL_DIR/mihomo"
 su -c "chmod +x $INSTALL_DIR/mihomo"
 rm -f "$TMP_TAR"
 
