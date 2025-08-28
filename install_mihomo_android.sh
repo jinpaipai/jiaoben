@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# install_mihomo_android.sh - 安装/更新 Mihomo 并配置快捷脚本
+# install_mihomo_android.sh - 安装/更新 Mihomo 并配置快捷脚本（Termux 安全目录版）
 
 # -----------------------------
 # 配置参数
@@ -8,6 +8,10 @@ MIRROR="https://github.jinpaipai.fun/https://github.com"
 API="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
 INSTALL_DIR="/data/clash"
 TASK_DIR="$HOME/.shortcuts/tasks"
+TMP_DIR="$HOME/tmp"
+
+# 创建临时目录
+mkdir -p "$TMP_DIR"
 
 # -----------------------------
 # 检测架构
@@ -48,8 +52,16 @@ fi
 ASSET_URL="$MIRROR/${ASSET_URL#https://github.com/}"
 
 echo "[INFO] 下载地址: $ASSET_URL"
-TMP_FILE="/tmp/mihomo_download"
+TMP_FILE="$TMP_DIR/mihomo_download"
+
+# -----------------------------
+# 下载文件
+# -----------------------------
 curl -L --fail -o "$TMP_FILE" "$ASSET_URL"
+if [ ! -f "$TMP_FILE" ] || [ ! -s "$TMP_FILE" ]; then
+    echo "❌ 下载失败或文件为空"
+    exit 1
+fi
 
 # -----------------------------
 # 安装目录
@@ -72,13 +84,13 @@ unpack_mihomo() {
         echo "❌ 未知文件格式"
         exit 1
     fi
-    # 改名为 mihomo
+    # 统一改名
     su -c "mv $BIN_PATH $INSTALL_DIR/mihomo"
     su -c "chmod +x $INSTALL_DIR/mihomo"
-    rm -f "$TMP_FILE"
 }
 
 unpack_mihomo
+rm -f "$TMP_FILE"
 echo "[INFO] Mihomo 已安装到 $INSTALL_DIR/mihomo ✅"
 
 # -----------------------------
