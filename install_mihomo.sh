@@ -124,11 +124,9 @@ if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
     read -rp "请输入你的订阅链接: " SUB_URL
     if [ -z "$SUB_URL" ]; then
         echo "❌ 订阅链接为空，跳过配置订阅更新"
-        exit 0
-    fi
-
-    echo "创建 mihomo_subupdate.sh 脚本..."
-    cat > /usr/local/bin/mihomo_subupdate.sh <<EOF
+    else
+        echo "创建 mihomo_subupdate.sh 脚本..."
+        cat > /usr/local/bin/mihomo_subupdate.sh <<EOF
 #!/bin/bash
 # Mihomo 配置自动更新脚本（只在有变化时 reload）
 
@@ -161,10 +159,10 @@ else
 fi
 EOF
 
-    chmod +x /usr/local/bin/mihomo_subupdate.sh
+        chmod +x /usr/local/bin/mihomo_subupdate.sh
 
-    echo "创建 systemd 服务和定时器..."
-    cat > /etc/systemd/system/mihomo-update.service <<EOF
+        echo "创建 systemd 服务和定时器..."
+        cat > /etc/systemd/system/mihomo-update.service <<EOF
 [Unit]
 Description=Update mihomo config.yaml
 
@@ -173,7 +171,7 @@ Type=oneshot
 ExecStart=/usr/local/bin/mihomo_subupdate.sh
 EOF
 
-    cat > /etc/systemd/system/mihomo-update.timer <<EOF
+        cat > /etc/systemd/system/mihomo-update.timer <<EOF
 [Unit]
 Description=Run mihomo_subupdate script every 30 minutes
 
@@ -185,11 +183,12 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-    systemctl daemon-reload
-    systemctl enable --now mihomo-update.timer
+        systemctl daemon-reload
+        systemctl enable --now mihomo-update.timer
 
-    echo "=== 订阅更新功能已启用 ==="
-    systemctl list-timers --all | grep mihomo-update
+        echo "=== 订阅更新功能已启用 ==="
+        systemctl list-timers --all | grep mihomo-update
+    fi
 fi
 
 echo "=== 安装与配置完成 ==="
