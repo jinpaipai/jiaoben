@@ -21,6 +21,7 @@ FILES_TO_BACKUP=(
     "/root/ql"
     "/etc/sub-store"
     "/opt/vault-data"
+    "/opt/srs"
     "/etc/filebrowser.db"
     "/opt/nezha"
     "/opt/1panel/apps"
