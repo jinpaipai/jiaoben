@@ -23,6 +23,7 @@ FILES_TO_BACKUP=(
     "/opt/vault-data"
     "/etc/filebrowser.db"
     "/opt/nezha"
+    "/opt/srs"
     "/opt/1panel/apps"
     "/opt/1panel/www"
     "/etc/localtime"
