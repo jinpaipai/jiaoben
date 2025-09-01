@@ -38,6 +38,7 @@ if [ $? -eq 0 ]; then
         "h-ui.service"
         "1panel-core.service"
         "1panel-agent.service"
+        "filebrowser.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
