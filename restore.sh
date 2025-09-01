@@ -39,8 +39,8 @@ if [ $? -eq 0 ]; then
         "1panel-core.service"
         "1panel-agent.service"
         "filebrowser.service"
-        "ufw.service"
-        "docker.service"
+        "mihomo.service"
+        "mihomo-update.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
