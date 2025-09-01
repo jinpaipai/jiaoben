@@ -28,6 +28,7 @@ FILES_TO_BACKUP=(
     "/opt/1panel/www"
     "/etc/localtime"
     "/usr/local/x-ui"
+    "/usr/local/h-ui"
     "/root/.cloudflared"
     "$HOME/.config/qBittorrent"
     "$HOME/.local/share/qBittorrent"
@@ -39,6 +40,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/frps.service"
     "/etc/systemd/system/qbittorrent-nox.service"
     "/etc/systemd/system/alist.service"
+    "/etc/systemd/system/h-ui.service"
 )
 
 # 日志：备份开始
