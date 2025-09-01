@@ -38,6 +38,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/frpc.service"  
     "/etc/systemd/system/frps.service"
     "/etc/systemd/system/qbittorrent-nox.service"
+    "/etc/systemd/system/alist.service"
 )
 
 # 日志：备份开始
