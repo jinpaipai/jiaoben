@@ -28,6 +28,7 @@ FILES_TO_BACKUP=(
     "/opt/1panel/www"
     "/etc/localtime"
     "/usr/local/x-ui"
+    "/etc/x-ui/"
     "/usr/local/h-ui"
     "/root/.cloudflared"
     "$HOME/.config/qBittorrent"
