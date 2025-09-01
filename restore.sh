@@ -40,6 +40,7 @@ if [ $? -eq 0 ]; then
         "1panel-agent.service"
         "filebrowser.service"
         "ufw.service"
+        "docker.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
