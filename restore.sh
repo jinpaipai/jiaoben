@@ -53,6 +53,18 @@ if [ $? -eq 0 ]; then
         fi
     done
 
+    # 新增操作
+    echo "🔄 重启网络服务..."
+    systemctl restart networking
+
+    echo "🔄 重新加载 systemd 配置..."
+    systemctl daemon-reload
+
+    echo "🔄 启用并立即启动 mihomo-update.timer..."
+    systemctl enable --now mihomo-update.timer
+
+    echo "✅ 所有操作完成"
+
 else
     echo "❌ 恢复失败，请检查压缩包是否完整"
     exit 1
