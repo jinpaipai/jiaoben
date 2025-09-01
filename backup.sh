@@ -27,10 +27,12 @@ FILES_TO_BACKUP=(
     "/opt/1panel/apps"
     "/opt/1panel/www"
     "/etc/localtime"
+    "/root/.cloudflared"
     "$HOME/.config/qBittorrent"
     "$HOME/.local/share/qBittorrent"
     "/etc/systemd/system/nezha-dashboard.service"
     "/etc/systemd/system/nezha-agent.service"
+    "/etc/systemd/system/cloudflared.service"
 )
 
 # 日志：备份开始
