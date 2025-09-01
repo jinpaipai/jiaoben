@@ -39,9 +39,16 @@ FILES_TO_BACKUP=(
     "/usr/bin/x-ui"
     "/etc/x-ui/"
     "/usr/local/h-ui"
+    "/etc/mihomo"
+    "/usr/local/bin/mihomo"
+    "/etc/sysctl.conf"
     "/root/.cloudflared"
+    "/usr/local/bin/cloudflared"
+    "/usr/bin/qbittorrent-nox"
     "$HOME/.config/qBittorrent"
     "$HOME/.local/share/qBittorrent"
+    "/usr/local/bin/mihomo_subupdate.sh"
+    "/etc/systemd/system/mihomo-update.timer"
     "/lib/systemd/system/docker.socket"
     "/etc/systemd/system/nezha-dashboard.service"
     "/etc/systemd/system/nezha-agent.service"
@@ -55,6 +62,8 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/1panel-core.service"
     "/etc/systemd/system/1panel-agent.service"
     "/etc/systemd/system/filebrowser.service"
+    "/etc/systemd/system/mihomo.service"
+    "/etc/systemd/system/mihomo-update.service"
 )
 
 # 日志：备份开始
