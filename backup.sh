@@ -24,8 +24,7 @@ FILES_TO_BACKUP=(
     "/opt/srs"
     "/etc/filebrowser.db"
     "/opt/nezha"
-    "/opt/1panel/apps"
-    "/opt/1panel/www"
+    "/opt/1panel"
     "/etc/localtime"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
@@ -43,6 +42,8 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/qbittorrent-nox.service"
     "/etc/systemd/system/alist.service"
     "/etc/systemd/system/h-ui.service"
+    "/etc/systemd/system/1panel-core.service"
+    "/etc/systemd/system/1panel-agent.service"
 )
 
 # 日志：备份开始
