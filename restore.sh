@@ -19,10 +19,32 @@ if [ "$CONFIRM" != "y" ]; then
     exit 0
 fi
 
+# 恢复备份
 tar -xzvf "$LATEST_BACKUP" -C /
 
 if [ $? -eq 0 ]; then
     echo "✅ 恢复完成，数据已恢复到原始路径"
+
+    # 自动开启开机自启
+    SERVICES=(
+        "nezha-dashboard.service"
+        "nezha-agent.service"
+        "cloudflared.service"
+        "x-ui.service"
+        "frpc.service"
+        "frps.service"
+    )
+
+    for SERVICE in "${SERVICES[@]}"; do
+        if [ -f "/etc/systemd/system/$SERVICE" ]; then
+            systemctl enable "$SERVICE"
+            systemctl restart "$SERVICE"
+            echo "✅ 已启用并重启 $SERVICE"
+        else
+            echo "⚠️ 服务文件 $SERVICE 不存在，跳过"
+        fi
+    done
+
 else
     echo "❌ 恢复失败，请检查压缩包是否完整"
     exit 1
