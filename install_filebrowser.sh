@@ -49,7 +49,7 @@ chmod +x /usr/bin/filebrowser
 rm -rf "$tmpdir"
 
 # 创建 systemd 服务
-cat > /lib/systemd/system/filebrowser.service <<EOF
+cat > /etc/systemd/system/filebrowser.service <<EOF
 [Unit]
 Description=File Browser
 After=network.target
