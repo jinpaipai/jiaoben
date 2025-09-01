@@ -33,6 +33,7 @@ if [ $? -eq 0 ]; then
         "x-ui.service"
         "frpc.service"
         "frps.service"
+        "qbittorrent-nox.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
