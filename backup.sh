@@ -34,6 +34,8 @@ FILES_TO_BACKUP=(
     "/usr/bin/1panel-agent"
     "/usr/bin/1panel-core"
     "/usr/bin/1pctl"
+    "/etc/ufw"
+
     "/etc/localtime"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
@@ -54,6 +56,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/1panel-core.service"
     "/etc/systemd/system/1panel-agent.service"
     "/etc/systemd/system/filebrowser.service"
+    "/lib/systemd/system/ufw.service"
 )
 
 # 日志：备份开始
