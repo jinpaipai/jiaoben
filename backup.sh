@@ -25,6 +25,8 @@ FILES_TO_BACKUP=(
     "/etc/filebrowser.db"
     "/opt/nezha"
     "/opt/1panel"
+    "/usr/local/bin/1panel-core"
+    "/usr/local/bin/1panel-agent"
     "/etc/localtime"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
