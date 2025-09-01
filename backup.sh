@@ -53,6 +53,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/h-ui.service"
     "/etc/systemd/system/1panel-core.service"
     "/etc/systemd/system/1panel-agent.service"
+    "/etc/systemd/system/filebrowser.service"
 )
 
 # 日志：备份开始
