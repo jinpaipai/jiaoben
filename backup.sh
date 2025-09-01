@@ -37,6 +37,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/x-ui.service"
     "/etc/systemd/system/frpc.service"  
     "/etc/systemd/system/frps.service"
+    "/etc/systemd/system/qbittorrent-nox.service"
 )
 
 # 日志：备份开始
