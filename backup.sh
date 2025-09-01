@@ -22,6 +22,7 @@ FILES_TO_BACKUP=(
     "/etc/sub-store"
     "/opt/vault-data"
     "/opt/srs"
+    "/usr/bin/filebrowser"
     "/etc/filebrowser.db"
     "/opt/nezha"
     "/opt/1panel"
