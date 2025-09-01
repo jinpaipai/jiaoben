@@ -36,6 +36,7 @@ if [ $? -eq 0 ]; then
         "alist.service"
         "qbittorrent-nox.service"
         "h-ui.service"
+        "1panel.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
