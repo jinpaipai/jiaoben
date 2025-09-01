@@ -34,7 +34,9 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/nezha-dashboard.service"
     "/etc/systemd/system/nezha-agent.service"
     "/etc/systemd/system/cloudflared.service"
-    "/etc/systemd/system/x-ui.servicee"
+    "/etc/systemd/system/x-ui.service"
+    "/etc/systemd/system/frpc.service"  
+    "/etc/systemd/system/frps.service"
 )
 
 # 日志：备份开始
