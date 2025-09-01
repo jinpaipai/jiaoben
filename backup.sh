@@ -29,6 +29,7 @@ FILES_TO_BACKUP=(
     "/usr/local/bin/1panel-agent"
     "/usr/local/bin/1pctl"
     "/usr/bin/1panel"
+    "/usr/local/bin/lang"
     "/usr/bin/1panel-agent"
     "/usr/bin/1panel-core"
     "/usr/bin/1pctl"
