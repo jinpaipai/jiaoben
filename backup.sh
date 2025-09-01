@@ -35,7 +35,12 @@ FILES_TO_BACKUP=(
     "/usr/bin/1panel-core"
     "/usr/bin/1pctl"
     "/etc/ufw"
-
+    "/usr/bin/docker"
+    "/usr/bin/dockerd"
+    "/usr/bin/docker-compose"
+    "/usr/bin/docker-buildx"
+    "/etc/docker"
+    "/var/lib/docker"
     "/etc/localtime"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
@@ -44,6 +49,7 @@ FILES_TO_BACKUP=(
     "/root/.cloudflared"
     "$HOME/.config/qBittorrent"
     "$HOME/.local/share/qBittorrent"
+    "/lib/systemd/system/docker.socket"
     "/etc/systemd/system/nezha-dashboard.service"
     "/etc/systemd/system/nezha-agent.service"
     "/etc/systemd/system/cloudflared.service"
@@ -57,6 +63,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/1panel-agent.service"
     "/etc/systemd/system/filebrowser.service"
     "/lib/systemd/system/ufw.service"
+    "/lib/systemd/system/docker.service"
 )
 
 # 日志：备份开始
