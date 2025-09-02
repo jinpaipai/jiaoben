@@ -41,6 +41,7 @@ if [ $? -eq 0 ]; then
         "filebrowser.service"
         "mihomo.service"
         "mihomo-update.service"
+        "nodepass.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
