@@ -34,6 +34,7 @@ FILES_TO_BACKUP=(
     "/usr/bin/1panel-agent"
     "/usr/bin/1panel-core"
     "/usr/bin/1pctl"
+    "/root/zhengshu/"
     "/etc/localtime"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
