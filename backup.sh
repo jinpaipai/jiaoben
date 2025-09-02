@@ -18,6 +18,7 @@ FILES_TO_BACKUP=(
     "/usr/local/alist"
     "/usr/local/frp"
     "/root/nodepassdash"
+    "/etc/nodepass"
     "/root/ql"
     "/etc/sub-store"
     "/opt/vault-data"
@@ -65,6 +66,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/filebrowser.service"
     "/etc/systemd/system/mihomo.service"
     "/etc/systemd/system/mihomo-update.service"
+    "/etc/systemd/system/nodepass.service"
 )
 
 # 日志：备份开始
