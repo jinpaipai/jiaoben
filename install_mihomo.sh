@@ -79,18 +79,18 @@ echo "创建 systemd 服务..."
 cat > /etc/systemd/system/mihomo.service <<EOF
 [Unit]
 Description=mihomo Daemon, Another Clash Kernel.
-After=network.target NetworkManager.service systemd-networkd.service iwd.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 LimitNPROC=500
 LimitNOFILE=1000000
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
 Restart=always
-ExecStartPre=/usr/bin/sleep 1s
 ExecStart=/usr/local/bin/mihomo -d /etc/mihomo
-ExecReload=/bin/kill -HUP \$MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target
