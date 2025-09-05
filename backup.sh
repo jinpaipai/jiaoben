@@ -15,6 +15,7 @@ BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 
 # 指定需要打包的文件夹和文件
 FILES_TO_BACKUP=(
+    "/root/AdGuardHome"
     "/usr/local/alist"
     "/usr/local/frp"
     "/root/nodepassdash"
@@ -67,6 +68,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/mihomo.service"
     "/etc/systemd/system/mihomo-update.service"
     "/etc/systemd/system/nodepass.service"
+    "/etc/systemd/system/AdGuardHome.service"
 )
 
 # 日志：备份开始
