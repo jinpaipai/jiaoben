@@ -42,6 +42,7 @@ if [ $? -eq 0 ]; then
         "mihomo.service"
         "mihomo-update.service"
         "nodepass.service"
+        "AdGuardHome.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
