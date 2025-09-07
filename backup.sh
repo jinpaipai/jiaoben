@@ -2,7 +2,7 @@
 
 # 脚本：backup.sh
 # 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
-# 日志增强 + 完整备份验证 + 排除 /opt/1panel 内部备份文件
+# 日志增强 + 完整备份验证
 # 兼容：Debian 12
 
 # 设置备份目标路径
@@ -27,7 +27,15 @@ FILES_TO_BACKUP=(
     "/usr/bin/filebrowser"
     "/etc/filebrowser.db"
     "/opt/nezha"
-    "/opt/1panel"
+    "/opt/1panel/apps"
+    "/opt/1panel/db"
+    "/opt/1panel/docker"
+    "/opt/1panel/geo"
+    "/opt/1panel/mcp"
+    "/opt/1panel/resource"
+    "/opt/1panel/runtime"
+    "/opt/1panel/secret"
+    "/opt/1panel/www/"
     "/usr/local/bin/lang"
     "/usr/local/bin/1panel-agent"
     "/usr/local/bin/1panel-core"
@@ -71,11 +79,6 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/AdGuardHome.service"
 )
 
-# 设置排除规则
-EXCLUDE_PATTERNS=(
-    "/opt/1panel/backup"
-)
-
 # 日志：备份开始
 echo "===============================" >> "$LOG_FILE"
 echo "备份开始：$(date)" >> "$LOG_FILE"
@@ -95,15 +98,9 @@ if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
     exit 1
 fi
 
-# 构建 tar 排除参数
-TAR_EXCLUDE_PARAMS=()
-for PATTERN in "${EXCLUDE_PATTERNS[@]}"; do
-    TAR_EXCLUDE_PARAMS+=(--exclude="$PATTERN")
-done
-
 # 执行打包
 echo "正在打包文件..." | tee -a "$LOG_FILE"
-tar -czvf "$BACKUP_FILE" "${TAR_EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
+tar -czvf "$BACKUP_FILE" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
     echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
