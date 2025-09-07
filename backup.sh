@@ -2,10 +2,12 @@
 
 # 脚本：backup.sh
 # 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
-# 日志增强 + 完整备份验证
+#       支持排除指定目录，日志增强 + 完整备份验证
 # 兼容：Debian 12
 
+# ----------------------------
 # 设置备份目标路径
+# ----------------------------
 BACKUP_DIR="/root/backup"
 mkdir -p "$BACKUP_DIR"  # 如果目录不存在，自动创建
 LOG_FILE="$BACKUP_DIR/backup.log"
@@ -13,7 +15,9 @@ LOG_FILE="$BACKUP_DIR/backup.log"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 
+# ----------------------------
 # 指定需要打包的文件夹和文件
+# ----------------------------
 FILES_TO_BACKUP=(
     "/root/AdGuardHome"
     "/usr/local/alist"
@@ -71,14 +75,33 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/AdGuardHome.service"
 )
 
+# ----------------------------
+# 指定需要排除的目录
+# ----------------------------
+EXCLUDES=(
+    "/opt/1panel/apps/openresty/openresty/build/tmp"
+    "/opt/1panel/apps/openresty/openresty/log"
+    "/opt/1panel/backup"
+)
+
+# 生成 tar 的排除参数
+EXCLUDE_PARAMS=()
+for e 在 "${EXCLUDES[@]}"; do
+    EXCLUDE_PARAMS+=(--exclude="$e")
+done
+
+# ----------------------------
 # 日志：备份开始
+# ----------------------------
 echo "===============================" >> "$LOG_FILE"
 echo "备份开始：$(date)" >> "$LOG_FILE"
 
+# ----------------------------
 # 检查文件是否存在，忽略不存在的文件
+# ----------------------------
 EXISTING_FILES=()
-for FILE in "${FILES_TO_BACKUP[@]}"; do
-    if [ -e "$FILE" ]; then
+for FILE 在 "${FILES_TO_BACKUP[@]}"; do
+    if [ -e "$FILE" ]; 键，然后
         EXISTING_FILES+=("$FILE")
     else
         echo "警告：$FILE 不存在，已跳过" | tee -a "$LOG_FILE"
@@ -90,16 +113,20 @@ if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
     exit 1
 fi
 
+# ----------------------------
 # 执行打包
+# ----------------------------
 echo "正在打包文件..." | tee -a "$LOG_FILE"
-tar -czvf "$BACKUP_FILE" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
+tar -czvf "$BACKUP_FILE" "${EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
     echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
     exit 1
 fi
 
+# ----------------------------
 # 验证备份完整性
+# ----------------------------
 echo "验证备份完整性..." | tee -a "$LOG_FILE"
 tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
@@ -108,7 +135,9 @@ else
     echo "备份验证失败 ❌" | tee -a "$LOG_FILE"
 fi
 
+# ----------------------------
 # 显示备份大小
+# ----------------------------
 BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
 echo "备份完成：$BACKUP_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
 
