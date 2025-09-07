@@ -86,7 +86,7 @@ EXCLUDES=(
 
 # 生成 tar 的排除参数
 EXCLUDE_PARAMS=()
-for e 在 "${EXCLUDES[@]}"; do
+for e in "${EXCLUDES[@]}"; do
     EXCLUDE_PARAMS+=(--exclude="$e")
 done
 
@@ -101,7 +101,7 @@ echo "备份开始：$(date)" >> "$LOG_FILE"
 # ----------------------------
 EXISTING_FILES=()
 for FILE 在 "${FILES_TO_BACKUP[@]}"; do
-    if [ -e "$FILE" ]; 键，然后
+    if [ -e "$FILE" ]; then
         EXISTING_FILES+=("$FILE")
     else
         echo "警告：$FILE 不存在，已跳过" | tee -a "$LOG_FILE"
