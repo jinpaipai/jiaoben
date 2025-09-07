@@ -79,9 +79,10 @@ FILES_TO_BACKUP=(
 # 指定需要排除的目录
 # ----------------------------
 EXCLUDES=(
-    "/opt/1panel/apps/openresty/openresty/build/tmp"
-    "/opt/1panel/apps/openresty/openresty/log"
     "/opt/1panel/backup"
+    "/opt/1panel/resource/apps/remote"
+    "/opt/1panel/apps/openresty/openresty/log"
+    "/opt/1panel/apps/openresty/openresty/build/tmp"
 )
 
 # 生成 tar 的排除参数
