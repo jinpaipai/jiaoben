@@ -2,18 +2,19 @@
 
 # 脚本：backup.sh
 # 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
-#       支持排除指定目录，日志增强 + 完整备份验证
+#       支持排除指定目录，日志增强 + 完整备份验证 + GPG 加密
 # 兼容：Debian 12
 
 # ----------------------------
 # 设置备份目标路径
 # ----------------------------
 BACKUP_DIR="/root/backup"
-mkdir -p "$BACKUP_DIR"  # 如果目录不存在，自动创建
+mkdir -p "$BACKUP_DIR"
 LOG_FILE="$BACKUP_DIR/backup.log"
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
+ENCRYPTED_FILE="$BACKUP_FILE.gpg"
 
 # ----------------------------
 # 指定需要打包的文件夹和文件
@@ -73,6 +74,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/mihomo-update.service"
     "/etc/systemd/system/nodepass.service"
     "/etc/systemd/system/AdGuardHome.service"
+    "/root/.ssh"   # ✅ 新增：SSH 密钥文件夹
 )
 
 # ----------------------------
@@ -87,7 +89,6 @@ EXCLUDES=(
     "/opt/1panel/apps/openresty/openresty/build/tmp"
 )
 
-# 生成 tar 的排除参数
 EXCLUDE_PARAMS=()
 for e in "${EXCLUDES[@]}"; do
     EXCLUDE_PARAMS+=(--exclude="$e")
@@ -100,7 +101,7 @@ echo "===============================" >> "$LOG_FILE"
 echo "备份开始：$(date)" >> "$LOG_FILE"
 
 # ----------------------------
-# 检查文件是否存在，忽略不存在的文件
+# 检查文件是否存在
 # ----------------------------
 EXISTING_FILES=()
 for FILE in "${FILES_TO_BACKUP[@]}"; do
@@ -121,7 +122,6 @@ fi
 # ----------------------------
 echo "正在打包文件..." | tee -a "$LOG_FILE"
 tar -czvf "$BACKUP_FILE" "${EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
-
 if [ $? -ne 0 ]; then
     echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
     exit 1
@@ -136,22 +136,36 @@ if [ $? -eq 0 ]; then
     echo "备份验证通过 ✅" | tee -a "$LOG_FILE"
 else
     echo "备份验证失败 ❌" | tee -a "$LOG_FILE"
+    exit 1
+fi
+
+# ----------------------------
+# 加密压缩包
+# ----------------------------
+echo "请输入加密密码（解压时需要输入同样的密码）："
+gpg -c --batch --yes "$BACKUP_FILE"
+if [ $? -eq 0 ]; then
+    echo "备份文件已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
+    rm -f "$BACKUP_FILE"   # 删除未加密的 tar.gz
+else
+    echo "加密失败 ❌" | tee -a "$LOG_FILE"
+    exit 1
 fi
 
 # ----------------------------
 # 显示备份大小
 # ----------------------------
-BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-echo "备份完成：$BACKUP_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
+BACKUP_SIZE=$(du -h "$ENCRYPTED_FILE" | cut -f1)
+echo "备份完成：$ENCRYPTED_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
-# 备份轮转：保留最近 7 个备份
+# 备份轮转
 # ----------------------------
 MAX_BACKUPS=7
-BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
+BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
-    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$(($MAX_BACKUPS + 1)))
+    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg | tail -n +$(($MAX_BACKUPS + 1)))
     echo "删除旧备份文件：" | tee -a "$LOG_FILE"
     echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
