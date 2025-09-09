@@ -83,6 +83,7 @@ FILES_TO_BACKUP=(
 # 指定需要排除的目录
 # ----------------------------
 EXCLUDES=(
+    "/root/ql/data/log"
     "/opt/1panel/log"
     "/opt/1panel/tmp"
     "/opt/1panel/backup"
