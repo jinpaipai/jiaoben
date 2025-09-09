@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # 脚本：backup.sh
-# 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
-#       支持排除指定目录，日志增强 + 完整备份验证 + GPG 加密
-#       额外功能：自动保存 aria2 和 qbittorrent-nox 的 deb 安装包
+# 功能：完整备份程序数据、配置、systemd 服务及 deb 安装包到一个压缩包
+#       支持排除目录、日志记录、加密、备份轮转
 # 兼容：Debian 12
 
 # ----------------------------
@@ -104,30 +103,21 @@ echo "===============================" >> "$LOG_FILE"
 echo "备份开始：$(date)" >> "$LOG_FILE"
 
 # ----------------------------
-# 备份 aria2 安装包
+# 创建临时目录存放 deb 包
 # ----------------------------
-echo "正在保存 aria2 安装包..." | tee -a "$LOG_FILE"
-cd "$BACKUP_DIR"
-apt download aria2 >> "$LOG_FILE" 2>&1
-if [ $? -eq 0 ]; then
-    echo "aria2 安装包已保存到 $BACKUP_DIR" | tee -a "$LOG_FILE"
-else
-    echo "警告：aria2 安装包下载失败，可能未安装或网络不可用" | tee -a "$LOG_FILE"
-fi
-cd - >/dev/null
+TMP_DEB_DIR="/tmp/backup_debs_$TIMESTAMP"
+mkdir -p "$TMP_DEB_DIR"
 
-# ----------------------------
-# 备份 qbittorrent-nox 安装包
-# ----------------------------
+echo "正在保存 aria2 安装包..." | tee -a "$LOG_FILE"
+apt download aria2 -o=dir::cache="$TMP_DEB_DIR" >> "$LOG_FILE" 2>&1 || \
+    echo "⚠️ aria2 安装包下载失败" | tee -a "$LOG_FILE"
+
 echo "正在保存 qbittorrent-nox 安装包..." | tee -a "$LOG_FILE"
-cd "$BACKUP_DIR"
-apt download qbittorrent-nox >> "$LOG_FILE" 2>&1
-if [ $? -eq 0 ]; then
-    echo "qbittorrent-nox 安装包已保存到 $BACKUP_DIR" | tee -a "$LOG_FILE"
-else
-    echo "警告：qbittorrent-nox 安装包下载失败，可能未安装或网络不可用" | tee -a "$LOG_FILE"
-fi
-cd - >/dev/null
+apt download qbittorrent-nox -o=dir::cache="$TMP_DEB_DIR" >> "$LOG_FILE" 2>&1 || \
+    echo "⚠️ qbittorrent-nox 安装包下载失败" | tee -a "$LOG_FILE"
+
+# 把临时 deb 目录加入打包列表
+FILES_TO_BACKUP+=("$TMP_DEB_DIR")
 
 # ----------------------------
 # 检查文件是否存在
@@ -143,6 +133,7 @@ done
 
 if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
     echo "没有可打包的文件或文件夹，脚本退出" | tee -a "$LOG_FILE"
+    rm -rf "$TMP_DEB_DIR"
     exit 1
 fi
 
@@ -150,17 +141,17 @@ fi
 # 执行打包
 # ----------------------------
 echo "正在打包文件..." | tee -a "$LOG_FILE"
-tar -czvf "$BACKUP_FILE" \
-    "${EXCLUDE_PARAMS[@]}" \
-    "${EXISTING_FILES[@]}" \
-    "$BACKUP_DIR"/aria2_*.deb \
-    "$BACKUP_DIR"/qbittorrent-nox_*.deb \
-    >> "$LOG_FILE" 2>&1
-
+tar -czvf "$BACKUP_FILE" "${EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
 if [ $? -ne 0 ]; then
     echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
+    rm -rf "$TMP_DEB_DIR"
     exit 1
 fi
+
+# ----------------------------
+# 清理临时 deb 目录
+# ----------------------------
+rm -rf "$TMP_DEB_DIR"
 
 # ----------------------------
 # 验证备份完整性
