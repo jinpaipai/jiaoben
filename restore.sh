@@ -2,7 +2,29 @@
 
 BACKUP_DIR="/root/backup"
 
-# 优先查找加密备份
+# ----------------------------
+# 检查 GPG 是否安装
+# ----------------------------
+if ! command -v gpg >/dev/null 2>&1; then
+    echo "⚠️ GPG 未安装，正在自动安装 gnupg..."
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update && sudo apt install -y gnupg
+    else
+        echo "❌ 系统没有 apt，请手动安装 gnupg"
+        exit 1
+    fi
+
+    if ! command -v gpg >/dev/null 2>&1; then
+        echo "❌ GPG 安装失败，请手动安装 gnupg"
+        exit 1
+    else
+        echo "✅ GPG 安装成功"
+    fi
+fi
+
+# ----------------------------
+# 查找最新备份文件
+# ----------------------------
 LATEST_ENC=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | head -n 1)
 LATEST_PLAIN=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | head -n 1)
 
@@ -19,16 +41,19 @@ fi
 
 echo "准备恢复备份文件：$BACKUP_FILE"
 
+# ----------------------------
 # 用户确认
+# ----------------------------
 read -p "是否继续恢复？这会覆盖已有文件 (y/n): " CONFIRM
 CONFIRM=$(echo "$CONFIRM" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
-
 if [ "$CONFIRM" != "y" ]; then
     echo "已取消恢复"
     exit 0
 fi
 
-# 如果是加密备份，先解密
+# ----------------------------
+# 解密加密备份（如果有）
+# ----------------------------
 if [ "$IS_ENC" -eq 1 ]; then
     DECRYPTED_FILE="/tmp/restore_$$.tar.gz"
     echo "🔑 请输入解密密码（输入时不会显示字符）："
@@ -46,7 +71,9 @@ else
     RESTORE_FILE="$BACKUP_FILE"
 fi
 
+# ----------------------------
 # 解压并恢复
+# ----------------------------
 echo "📦 正在解压并恢复..."
 tar -xzvf "$RESTORE_FILE" -C /
 
@@ -58,7 +85,9 @@ if [ $? -eq 0 ]; then
         rm -f "$DECRYPTED_FILE"
     fi
 
+    # ----------------------------
     # 自动开启开机自启并重启服务
+    # ----------------------------
     SERVICES=(
         "nezha-dashboard.service"
         "nezha-agent.service"
@@ -88,7 +117,9 @@ if [ $? -eq 0 ]; then
         fi
     done
 
+    # ----------------------------
     # 重启网络并刷新 systemd
+    # ----------------------------
     echo "🔄 重启网络服务..."
     systemctl restart networking
 
@@ -96,7 +127,11 @@ if [ $? -eq 0 ]; then
     systemctl daemon-reload
 
     echo "🔄 启用并立即启动 mihomo-update.timer..."
-    systemctl enable --now mihomo-update.timer
+    if [ -f "/etc/systemd/system/mihomo-update.timer" ]; then
+        systemctl enable --now mihomo-update.timer
+    else
+        echo "⚠️ mihomo-update.timer 文件不存在，跳过"
+    fi
 
     echo "✅ 所有操作完成"
 
