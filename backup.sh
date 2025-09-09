@@ -79,7 +79,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/nezha-agent.service"
     "/etc/systemd/system/cloudflared.service"
     "/etc/systemd/system/x-ui.service"
-    "/etc/systemd/system/frpc.service"  
+    "/etc/systemd/system/frpc.service"
     "/etc/systemd/system/frps.service"
     "/etc/systemd/system/qbittorrent-nox.service"
     "/etc/systemd/system/alist.service"
@@ -163,7 +163,7 @@ echo "请输入加密密码（解压时需要输入同样的密码）："
 gpg -c --batch --yes "$BACKUP_FILE"
 if [ $? -eq 0 ]; then
     echo "备份文件已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
-    rm -f "$BACKUP_FILE"   # 删除未加密的 tar.gz
+    rm -f "$BACKUP_FILE"
 else
     echo "加密失败 ❌" | tee -a "$LOG_FILE"
     exit 1
