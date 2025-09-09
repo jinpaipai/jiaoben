@@ -121,7 +121,7 @@ echo "备份开始：$(date)" >> "$LOG_FILE"
 # 检查文件是否存在
 # ----------------------------
 EXISTING_FILES=()
-for FILE 在 "${FILES_TO_BACKUP[@]}"; do
+for FILE in "${FILES_TO_BACKUP[@]}"; do
     if [ -e "$FILE" ]; then
         EXISTING_FILES+=("$FILE")
     else
