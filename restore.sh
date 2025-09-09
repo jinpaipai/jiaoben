@@ -22,7 +22,7 @@ echo "准备恢复备份文件：$BACKUP_FILE"
 read -p "是否继续恢复？这会覆盖已有文件 (y/n): " CONFIRM
 CONFIRM=$(echo "$CONFIRM" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
 
-if [ "$CONFIRM" != "y" ]; 键，然后
+if [ "$CONFIRM" != "y" ]; then
     echo "已取消恢复"
     exit 0
 fi
