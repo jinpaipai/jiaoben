@@ -20,6 +20,8 @@ ENCRYPTED_FILE="$BACKUP_FILE.gpg"
 # 指定需要打包的文件夹和文件
 # ----------------------------
 FILES_TO_BACKUP=(
+    "/root/.ssh"
+    "/etc/aria2"
     "/root/AdGuardHome"
     "/usr/local/alist"
     "/usr/local/frp"
@@ -74,7 +76,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/mihomo-update.service"
     "/etc/systemd/system/nodepass.service"
     "/etc/systemd/system/AdGuardHome.service"
-    "/root/.ssh"   # ✅ 新增：SSH 密钥文件夹
+    "/etc/systemd/system/aria2.service"
 )
 
 # ----------------------------
