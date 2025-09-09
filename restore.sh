@@ -2,7 +2,9 @@
 
 BACKUP_DIR="/root/backup"
 
-# 优先找加密备份
+# ----------------------------
+# 找最新备份
+# ----------------------------
 LATEST_ENC=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | head -n 1)
 LATEST_PLAIN=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | head -n 1)
 
@@ -27,7 +29,9 @@ if [ "$CONFIRM" != "y" ]; then
     exit 0
 fi
 
+# ----------------------------
 # 解密（如果是加密备份）
+# ----------------------------
 if [ "$IS_ENC" -eq 1 ]; then
     DECRYPTED_FILE="/tmp/restore_$$.tar.gz"
     echo "🔑 请输入解密密码（输入时不会显示字符）："
@@ -45,80 +49,76 @@ else
     RESTORE_FILE="$BACKUP_FILE"
 fi
 
+# ----------------------------
 # 解压恢复
+# ----------------------------
 echo "📦 正在解压并恢复..."
 tar -xzvf "$RESTORE_FILE" -C /
 
-if [ $? -eq 0 ]; then
-    echo "✅ 解压完成，正在执行恢复操作..."
-
-    # 删除临时解密文件
-    if [ "$IS_ENC" -eq 1 ]; then
-        rm -f "$DECRYPTED_FILE"
-    fi
-
-    # ----------------------------
-    # 自动安装 aria2 / qbittorrent-nox
-    # ----------------------------
-    DEB_FILES=$(ls "$BACKUP_DIR"/*.deb 2>/dev/null)
-    if [ -n "$DEB_FILES" ]; then
-        echo "📦 检测到已备份的 deb 包，开始安装..."
-        dpkg -i $DEB_FILES || apt-get install -f -y
-    else
-        echo "⚠️ 没有找到 deb 安装包，跳过安装"
-    fi
-
-    # ----------------------------
-    # 自动启用服务
-    # ----------------------------
-    SERVICES=(
-        "nezha-dashboard.service"
-        "nezha-agent.service"
-        "cloudflared.service"
-        "x-ui.service"
-        "frpc.service"
-        "frps.service"
-        "qbittorrent-nox.service"
-        "alist.service"
-        "h-ui.service"
-        "1panel-core.service"
-        "1panel-agent.service"
-        "filebrowser.service"
-        "mihomo.service"
-        "mihomo-update.service"
-        "nodepass.service"
-        "AdGuardHome.service"
-        "aria2.service"
-    )
-
-    for SERVICE in "${SERVICES[@]}"; do
-        if [ -f "/etc/systemd/system/$SERVICE" ]; then
-            systemctl enable "$SERVICE"
-            systemctl restart "$SERVICE"
-            echo "✅ 已启用并重启 $SERVICE"
-        else
-            echo "⚠️ 服务文件 $SERVICE 不存在，跳过"
-        fi
-    done
-
-    # ----------------------------
-    # 额外处理
-    # ----------------------------
-    echo "🔄 重启网络服务..."
-    systemctl restart networking
-
-    echo "🔄 重新加载 systemd 配置..."
-    systemctl daemon-reload
-
-    echo "🔄 启用并立即启动 mihomo-update.timer..."
-    systemctl enable --now mihomo-update.timer
-
-    echo "✅ 所有操作完成"
-
-else
-    echo "❌ 恢复失败，请检查压缩包是否完整"
-    if [ "$IS_ENC" -eq 1 ]; then
-        rm -f "$DECRYPTED_FILE"
-    fi
+if [ $? -ne 0 ]; then
+    echo "❌ 解压失败，请检查压缩包是否完整"
+    [ "$IS_ENC" -eq 1 ] && rm -f "$DECRYPTED_FILE"
     exit 1
 fi
+
+# 删除临时解密文件
+[ "$IS_ENC" -eq 1 ] && rm -f "$DECRYPTED_FILE"
+
+# ----------------------------
+# 自动安装压缩包内 deb 文件
+# ----------------------------
+DEB_FILES=$(find "$BACKUP_DIR" -maxdepth 1 -name "*.deb")
+if [ -n "$DEB_FILES" ]; then
+    echo "📦 检测到 deb 安装包，开始安装..."
+    dpkg -i $DEB_FILES || apt-get install -f -y
+else
+    echo "⚠️ 没有找到 deb 安装包，跳过安装"
+fi
+
+# ----------------------------
+# 自动启用服务
+# ----------------------------
+SERVICES=(
+    "nezha-dashboard.service"
+    "nezha-agent.service"
+    "cloudflared.service"
+    "x-ui.service"
+    "frpc.service"
+    "frps.service"
+    "qbittorrent-nox.service"
+    "alist.service"
+    "h-ui.service"
+    "1panel-core.service"
+    "1panel-agent.service"
+    "filebrowser.service"
+    "mihomo.service"
+    "mihomo-update.service"
+    "nodepass.service"
+    "AdGuardHome.service"
+    "aria2.service"
+)
+
+echo "🔄 启用并重启服务..."
+for SERVICE in "${SERVICES[@]}"; do
+    if [ -f "/etc/systemd/system/$SERVICE" ]; then
+        systemctl enable "$SERVICE"
+        systemctl restart "$SERVICE"
+        echo "✅ 已启用并重启 $SERVICE"
+    else
+        echo "⚠️ 服务文件 $SERVICE 不存在，跳过"
+    fi
+done
+
+# ----------------------------
+# 网络和 systemd
+# ----------------------------
+echo "🔄 重启网络服务..."
+systemctl restart networking
+
+echo "🔄 重新加载 systemd 配置..."
+systemctl daemon-reload
+
+echo "🔄 启用并立即启动 mihomo-update.timer..."
+systemctl enable --now mihomo-update.timer
+
+echo "✅ 恢复完成，所有操作已完成"
