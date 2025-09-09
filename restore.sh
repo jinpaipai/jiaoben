@@ -50,14 +50,27 @@ echo "📦 正在解压并恢复..."
 tar -xzvf "$RESTORE_FILE" -C /
 
 if [ $? -eq 0 ]; then
-    echo "✅ 恢复完成，数据已恢复到原始路径"
+    echo "✅ 解压完成，正在执行恢复操作..."
 
     # 删除临时解密文件
     if [ "$IS_ENC" -eq 1 ]; then
         rm -f "$DECRYPTED_FILE"
     fi
 
-    # 自动开启开机自启
+    # ----------------------------
+    # 自动安装 aria2 / qbittorrent-nox
+    # ----------------------------
+    DEB_FILES=$(ls "$BACKUP_DIR"/*.deb 2>/dev/null)
+    if [ -n "$DEB_FILES" ]; then
+        echo "📦 检测到已备份的 deb 包，开始安装..."
+        dpkg -i $DEB_FILES || apt-get install -f -y
+    else
+        echo "⚠️ 没有找到 deb 安装包，跳过安装"
+    fi
+
+    # ----------------------------
+    # 自动启用服务
+    # ----------------------------
     SERVICES=(
         "nezha-dashboard.service"
         "nezha-agent.service"
@@ -88,7 +101,9 @@ if [ $? -eq 0 ]; then
         fi
     done
 
-    # 网络和 systemd
+    # ----------------------------
+    # 额外处理
+    # ----------------------------
     echo "🔄 重启网络服务..."
     systemctl restart networking
 
