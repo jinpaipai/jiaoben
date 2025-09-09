@@ -72,7 +72,6 @@ if [ $? -eq 0 ]; then
         "1panel-agent.service"
         "filebrowser.service"
         "mihomo.service"
-        "mihomo-update.service"
         "nodepass.service"
         "AdGuardHome.service"
         "aria2.service"
