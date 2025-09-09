@@ -1,15 +1,13 @@
-#!/bin/bash
-# backup.sh - 完整备份脚本（rsync 支持排除目录、含 .deb 文件，无 _apt 警告）
+我已有备份脚本，我选择直接备份 deb 安装包，帮我加入此功能#!/bin/bash
+
+# 脚本：backup.sh
+# 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
+#       支持排除指定目录，日志增强 + 完整备份验证 + GPG 加密
+# 兼容：Debian 12
 
 # ----------------------------
-# 确保 rsync 已安装
+# 设置备份目标路径
 # ----------------------------
-if ! command -v rsync >/dev/null 2>&1; then
-    echo "⚠️ rsync 未安装，正在安装..."
-    apt update
-    apt install -y rsync
-fi
-
 BACKUP_DIR="/root/backup"
 mkdir -p "$BACKUP_DIR"
 LOG_FILE="$BACKUP_DIR/backup.log"
@@ -19,7 +17,7 @@ BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 ENCRYPTED_FILE="$BACKUP_FILE.gpg"
 
 # ----------------------------
-# 需要备份的文件和目录
+# 指定需要打包的文件夹和文件
 # ----------------------------
 FILES_TO_BACKUP=(
     "/root/.ssh"
@@ -82,11 +80,9 @@ FILES_TO_BACKUP=(
 )
 
 # ----------------------------
-# 排除目录
+# 指定需要排除的目录
 # ----------------------------
 EXCLUDES=(
-    "/root/nodepassdash/logs"
-    "/root/ql/data/log"
     "/opt/1panel/log"
     "/opt/1panel/tmp"
     "/opt/1panel/backup"
@@ -95,14 +91,13 @@ EXCLUDES=(
     "/opt/1panel/apps/openresty/openresty/build/tmp"
 )
 
-# rsync 排除参数
-RSYNC_EXCLUDES=()
+EXCLUDE_PARAMS=()
 for e in "${EXCLUDES[@]}"; do
-    RSYNC_EXCLUDES+=(--exclude="$e")
+    EXCLUDE_PARAMS+=(--exclude="$e")
 done
 
 # ----------------------------
-# 日志
+# 日志：备份开始
 # ----------------------------
 echo "===============================" >> "$LOG_FILE"
 echo "备份开始：$(date)" >> "$LOG_FILE"
@@ -125,45 +120,19 @@ if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
 fi
 
 # ----------------------------
-# 创建临时打包目录
-# ----------------------------
-TMP_BACKUP_DIR="/tmp/backup_root_$TIMESTAMP"
-mkdir -p "$TMP_BACKUP_DIR"
-
-# ----------------------------
-# 使用 rsync 拷贝文件，生效排除目录
-# ----------------------------
-for f in "${EXISTING_FILES[@]}"; do
-    BASENAME=$(basename "$f")
-    DEST="$TMP_BACKUP_DIR/$BASENAME"
-    if [ -d "$f" ]; then
-        mkdir -p "$DEST"
-        rsync -a "${RSYNC_EXCLUDES[@]}" "$f"/ "$DEST"/
-    else
-        cp -a "$f" "$DEST"
-    fi
-done
-
-# ----------------------------
-# 下载 deb 文件到临时目录 root 可写路径
-# ----------------------------
-DEB_DIR="$TMP_BACKUP_DIR/deb"
-mkdir -p "$DEB_DIR"
-cd "$DEB_DIR" || exit 1
-echo "🔽 下载 aria2 和 qbittorrent-nox deb 文件..."
-apt download aria2 qbittorrent-nox
-cd -
-
-# ----------------------------
-# 打包整个临时目录，包括 deb 文件
+# 执行打包
 # ----------------------------
 echo "正在打包文件..." | tee -a "$LOG_FILE"
-tar -czvf "$BACKUP_FILE" -C "$TMP_BACKUP_DIR" . >> "$LOG_FILE" 2>&1
-rm -rf "$TMP_BACKUP_DIR"
+tar -czvf "$BACKUP_FILE" "${EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
+if [ $? -ne 0 ]; then
+    echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
+    exit 1
+fi
 
 # ----------------------------
 # 验证备份完整性
 # ----------------------------
+echo "验证备份完整性..." | tee -a "$LOG_FILE"
 tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "备份验证通过 ✅" | tee -a "$LOG_FILE"
@@ -173,28 +142,36 @@ else
 fi
 
 # ----------------------------
-# 加密
+# 加密压缩包
 # ----------------------------
-echo "请输入加密密码："
+echo "请输入加密密码（解压时需要输入同样的密码）："
 gpg -c --batch --yes "$BACKUP_FILE"
 if [ $? -eq 0 ]; then
-    echo "备份已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
-    rm -f "$BACKUP_FILE"
+    echo "备份文件已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
+    rm -f "$BACKUP_FILE"   # 删除未加密的 tar.gz
 else
     echo "加密失败 ❌" | tee -a "$LOG_FILE"
     exit 1
 fi
 
 # ----------------------------
+# 显示备份大小
+# ----------------------------
+BACKUP_SIZE=$(du -h "$ENCRYPTED_FILE" | cut -f1)
+echo "备份完成：$ENCRYPTED_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
+
+# ----------------------------
 # 备份轮转
 # ----------------------------
 MAX_BACKUPS=7
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
+
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg | tail -n +$(($MAX_BACKUPS + 1)))
+    echo "删除旧备份文件：" | tee -a "$LOG_FILE"
+    echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
 fi
 
 echo "备份结束：$(date)" >> "$LOG_FILE"
 echo "===============================" >> "$LOG_FILE"
-echo "✅ 备份完成：$ENCRYPTED_FILE"
