@@ -176,9 +176,9 @@ BACKUP_SIZE=$(du -h "$ENCRYPTED_FILE" | cut -f1)
 echo "备份完成：$ENCRYPTED_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
-# 备份轮转：保留最近 7 个备份
+# 备份轮转：保留最近 3 个备份
 # ----------------------------
-MAX_BACKUPS=7
+MAX_BACKUPS=3
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
