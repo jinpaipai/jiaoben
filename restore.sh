@@ -75,6 +75,7 @@ if [ $? -eq 0 ]; then
         "mihomo-update.service"
         "nodepass.service"
         "AdGuardHome.service"
+        "aria2.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
