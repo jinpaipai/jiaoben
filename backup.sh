@@ -1,13 +1,15 @@
 #!/bin/bash
-
-# 脚本：backup.sh
-# 功能：完整备份程序数据、配置、systemd 服务及 deb 安装包到一个压缩包
-#       支持排除目录、日志记录、加密、备份轮转
-# 兼容：Debian 12
+# backup.sh - 完整备份脚本（含 .deb 文件，无 _apt 警告）
 
 # ----------------------------
-# 设置备份目标路径
+# 确保 rsync 已安装
 # ----------------------------
+if ! command -v rsync >/dev/null 2>&1; then
+    echo "⚠️ rsync 未安装，正在安装..."
+    apt update
+    apt install -y rsync
+fi
+
 BACKUP_DIR="/root/backup"
 mkdir -p "$BACKUP_DIR"
 LOG_FILE="$BACKUP_DIR/backup.log"
@@ -17,7 +19,7 @@ BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 ENCRYPTED_FILE="$BACKUP_FILE.gpg"
 
 # ----------------------------
-# 指定需要打包的文件夹和文件
+# 需要备份的文件和目录
 # ----------------------------
 FILES_TO_BACKUP=(
     "/root/.ssh"
@@ -80,7 +82,7 @@ FILES_TO_BACKUP=(
 )
 
 # ----------------------------
-# 指定需要排除的目录
+# 排除目录
 # ----------------------------
 EXCLUDES=(
     "/root/nodepassdash/logs"
@@ -99,27 +101,10 @@ for e in "${EXCLUDES[@]}"; do
 done
 
 # ----------------------------
-# 日志：备份开始
+# 日志
 # ----------------------------
 echo "===============================" >> "$LOG_FILE"
 echo "备份开始：$(date)" >> "$LOG_FILE"
-
-# ----------------------------
-# 创建临时目录存放 deb 包
-# ----------------------------
-TMP_DEB_DIR="/tmp/backup_debs_$TIMESTAMP"
-mkdir -p "$TMP_DEB_DIR"
-
-echo "正在保存 aria2 安装包..." | tee -a "$LOG_FILE"
-apt download aria2 -o=dir::cache="$TMP_DEB_DIR" >> "$LOG_FILE" 2>&1 || \
-    echo "⚠️ aria2 安装包下载失败" | tee -a "$LOG_FILE"
-
-echo "正在保存 qbittorrent-nox 安装包..." | tee -a "$LOG_FILE"
-apt download qbittorrent-nox -o=dir::cache="$TMP_DEB_DIR" >> "$LOG_FILE" 2>&1 || \
-    echo "⚠️ qbittorrent-nox 安装包下载失败" | tee -a "$LOG_FILE"
-
-# 把临时 deb 目录加入打包列表
-FILES_TO_BACKUP+=("$TMP_DEB_DIR")
 
 # ----------------------------
 # 检查文件是否存在
@@ -135,30 +120,47 @@ done
 
 if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
     echo "没有可打包的文件或文件夹，脚本退出" | tee -a "$LOG_FILE"
-    rm -rf "$TMP_DEB_DIR"
     exit 1
 fi
 
 # ----------------------------
-# 执行打包
+# 创建临时打包目录
+# ----------------------------
+TMP_BACKUP_DIR="/tmp/backup_root_$TIMESTAMP"
+mkdir -p "$TMP_BACKUP_DIR"
+
+# 拷贝文件和目录
+for f in "${EXISTING_FILES[@]}"; do
+    BASENAME=$(basename "$f")
+    DEST="$TMP_BACKUP_DIR/$BASENAME"
+    if [ -d "$f" ]; then
+        mkdir -p "$DEST"
+        rsync -a "$f"/ "$DEST"/
+    else
+        cp -a "$f" "$DEST"
+    fi
+done
+
+# ----------------------------
+# 下载 deb 文件到 root 可写目录，彻底消除警告
+# ----------------------------
+DEB_DIR="$TMP_BACKUP_DIR/deb"
+mkdir -p "$DEB_DIR"
+cd "$DEB_DIR" || exit 1
+echo "🔽 下载 aria2 和 qbittorrent-nox deb 文件..."
+apt download aria2 qbittorrent-nox
+cd -
+
+# ----------------------------
+# 打包整个临时目录，包括 deb 文件
 # ----------------------------
 echo "正在打包文件..." | tee -a "$LOG_FILE"
-tar -czvf "$BACKUP_FILE" "${EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
-if [ $? -ne 0 ]; then
-    echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
-    rm -rf "$TMP_DEB_DIR"
-    exit 1
-fi
-
-# ----------------------------
-# 清理临时 deb 目录
-# ----------------------------
-rm -rf "$TMP_DEB_DIR"
+tar -czvf "$BACKUP_FILE" -C "$TMP_BACKUP_DIR" . >> "$LOG_FILE" 2>&1
+rm -rf "$TMP_BACKUP_DIR"
 
 # ----------------------------
 # 验证备份完整性
 # ----------------------------
-echo "验证备份完整性..." | tee -a "$LOG_FILE"
 tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "备份验证通过 ✅" | tee -a "$LOG_FILE"
@@ -168,36 +170,28 @@ else
 fi
 
 # ----------------------------
-# 加密压缩包
+# 加密
 # ----------------------------
-echo "请输入加密密码（解压时需要输入同样的密码）："
+echo "请输入加密密码："
 gpg -c --batch --yes "$BACKUP_FILE"
 if [ $? -eq 0 ]; then
-    echo "备份文件已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
-    rm -f "$BACKUP_FILE"   # 删除未加密的 tar.gz
+    echo "备份已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
+    rm -f "$BACKUP_FILE"
 else
     echo "加密失败 ❌" | tee -a "$LOG_FILE"
     exit 1
 fi
 
 # ----------------------------
-# 显示备份大小
-# ----------------------------
-BACKUP_SIZE=$(du -h "$ENCRYPTED_FILE" | cut -f1)
-echo "备份完成：$ENCRYPTED_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
-
-# ----------------------------
 # 备份轮转
 # ----------------------------
 MAX_BACKUPS=7
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
-
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg | tail -n +$(($MAX_BACKUPS + 1)))
-    echo "删除旧备份文件：" | tee -a "$LOG_FILE"
-    echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
 fi
 
 echo "备份结束：$(date)" >> "$LOG_FILE"
 echo "===============================" >> "$LOG_FILE"
+echo "✅ 备份完成：$ENCRYPTED_FILE"
