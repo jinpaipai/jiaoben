@@ -1,5 +1,5 @@
 #!/bin/bash
-# backup.sh - 完整备份脚本（含 .deb 文件，无 _apt 警告）
+# backup.sh - 完整备份脚本（rsync 支持排除目录、含 .deb 文件，无 _apt 警告）
 
 # ----------------------------
 # 确保 rsync 已安装
@@ -95,9 +95,10 @@ EXCLUDES=(
     "/opt/1panel/apps/openresty/openresty/build/tmp"
 )
 
-EXCLUDE_PARAMS=()
+# rsync 排除参数
+RSYNC_EXCLUDES=()
 for e in "${EXCLUDES[@]}"; do
-    EXCLUDE_PARAMS+=(--exclude="$e")
+    RSYNC_EXCLUDES+=(--exclude="$e")
 done
 
 # ----------------------------
@@ -129,20 +130,22 @@ fi
 TMP_BACKUP_DIR="/tmp/backup_root_$TIMESTAMP"
 mkdir -p "$TMP_BACKUP_DIR"
 
-# 拷贝文件和目录
+# ----------------------------
+# 使用 rsync 拷贝文件，生效排除目录
+# ----------------------------
 for f in "${EXISTING_FILES[@]}"; do
     BASENAME=$(basename "$f")
     DEST="$TMP_BACKUP_DIR/$BASENAME"
     if [ -d "$f" ]; then
         mkdir -p "$DEST"
-        rsync -a "$f"/ "$DEST"/
+        rsync -a "${RSYNC_EXCLUDES[@]}" "$f"/ "$DEST"/
     else
         cp -a "$f" "$DEST"
     fi
 done
 
 # ----------------------------
-# 下载 deb 文件到 root 可写目录，彻底消除警告
+# 下载 deb 文件到临时目录 root 可写路径
 # ----------------------------
 DEB_DIR="$TMP_BACKUP_DIR/deb"
 mkdir -p "$DEB_DIR"
