@@ -1,9 +1,24 @@
 #!/bin/bash
 
-# 脚本：backup.sh
-# 功能：将指定文件夹和文件打包到 /root/backup，并保留最近 7 个备份
-#       支持排除指定目录，日志增强 + 完整备份验证 + GPG 加密
-# 兼容：Debian 12
+# ----------------------------
+# 自动检测 GPG 并安装
+# ----------------------------
+if ! command -v gpg >/dev/null 2>&1; then
+    echo "⚠️ GPG 未安装，正在自动安装 gnupg..."
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update && sudo apt install -y gnupg
+    else
+        echo "❌ 系统没有 apt，请手动安装 gnupg"
+        exit 1
+    fi
+
+    if ! command -v gpg >/dev/null 2>&1; then
+        echo "❌ GPG 安装失败，请手动安装 gnupg"
+        exit 1
+    else
+        echo "✅ GPG 安装成功"
+    fi
+fi
 
 # ----------------------------
 # 设置备份目标路径
@@ -161,7 +176,7 @@ BACKUP_SIZE=$(du -h "$ENCRYPTED_FILE" | cut -f1)
 echo "备份完成：$ENCRYPTED_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
-# 备份轮转
+# 备份轮转：保留最近 7 个备份
 # ----------------------------
 MAX_BACKUPS=7
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
@@ -173,5 +188,8 @@ if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     rm -f $OLDEST_BACKUPS
 fi
 
+# ----------------------------
+# 日志：备份结束
+# ----------------------------
 echo "备份结束：$(date)" >> "$LOG_FILE"
 echo "===============================" >> "$LOG_FILE"
