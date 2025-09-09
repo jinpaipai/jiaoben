@@ -2,7 +2,7 @@
 
 BACKUP_DIR="/root/backup"
 
-# 优先找加密备份
+# 优先查找加密备份
 LATEST_ENC=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | head -n 1)
 LATEST_PLAIN=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | head -n 1)
 
@@ -19,6 +19,7 @@ fi
 
 echo "准备恢复备份文件：$BACKUP_FILE"
 
+# 用户确认
 read -p "是否继续恢复？这会覆盖已有文件 (y/n): " CONFIRM
 CONFIRM=$(echo "$CONFIRM" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
 
@@ -27,7 +28,7 @@ if [ "$CONFIRM" != "y" ]; then
     exit 0
 fi
 
-# 解密（如果是加密备份）
+# 如果是加密备份，先解密
 if [ "$IS_ENC" -eq 1 ]; then
     DECRYPTED_FILE="/tmp/restore_$$.tar.gz"
     echo "🔑 请输入解密密码（输入时不会显示字符）："
@@ -45,7 +46,7 @@ else
     RESTORE_FILE="$BACKUP_FILE"
 fi
 
-# 解压恢复
+# 解压并恢复
 echo "📦 正在解压并恢复..."
 tar -xzvf "$RESTORE_FILE" -C /
 
@@ -57,7 +58,7 @@ if [ $? -eq 0 ]; then
         rm -f "$DECRYPTED_FILE"
     fi
 
-    # 自动开启开机自启
+    # 自动开启开机自启并重启服务
     SERVICES=(
         "nezha-dashboard.service"
         "nezha-agent.service"
@@ -87,7 +88,7 @@ if [ $? -eq 0 ]; then
         fi
     done
 
-    # 网络和 systemd
+    # 重启网络并刷新 systemd
     echo "🔄 重启网络服务..."
     systemctl restart networking
 
