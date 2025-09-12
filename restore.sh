@@ -105,6 +105,7 @@ if [ $? -eq 0 ]; then
         "nodepass.service"
         "AdGuardHome.service"
         "aria2.service"
+        "cron.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
