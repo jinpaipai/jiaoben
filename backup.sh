@@ -50,6 +50,7 @@ FILES_TO_BACKUP=(
     "/usr/local/bin/cloudflared"
     "/usr/bin/qbittorrent-nox"
     "$HOME/.config/qBittorrent"
+    "/var/spool/cron/crontabs/root"
     "$HOME/.local/share/qBittorrent"
     "/usr/local/bin/mihomo_subupdate.sh"
     "/etc/systemd/system/mihomo-update.timer"
