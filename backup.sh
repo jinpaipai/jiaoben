@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ----------------------------
-# 设置备份目标路径
+# Set backup target directory
 # ----------------------------
 BACKUP_DIR="/root/backup"
 mkdir -p "$BACKUP_DIR"
@@ -11,7 +11,7 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 
 # ----------------------------
-# 指定需要打包的文件夹和文件
+# Specify files and directories to backup
 # ----------------------------
 FILES_TO_BACKUP=(
     "/root/.ssh"
@@ -75,7 +75,7 @@ FILES_TO_BACKUP=(
 )
 
 # ----------------------------
-# 指定需要排除的目录
+# Specify directories to exclude
 # ----------------------------
 EXCLUDES=(
     "/opt/1panel/log"
@@ -92,71 +92,71 @@ for e in "${EXCLUDES[@]}"; do
 done
 
 # ----------------------------
-# 日志：备份开始
+# Log: backup start
 # ----------------------------
 echo "===============================" >> "$LOG_FILE"
-echo "备份开始：$(date)" >> "$LOG_FILE"
+echo "Backup start: $(date)" >> "$LOG_FILE"
 
 # ----------------------------
-# 检查文件是否存在
+# Check if files exist
 # ----------------------------
 EXISTING_FILES=()
-for FILE 在 "${FILES_TO_BACKUP[@]}"; do
+for FILE in "${FILES_TO_BACKUP[@]}"; do
     if [ -e "$FILE" ]; then
         EXISTING_FILES+=("$FILE")
     else
-        echo "警告：$FILE 不存在，已跳过" | tee -a "$LOG_FILE"
+        echo "Warning: $FILE does not exist, skipped" | tee -a "$LOG_FILE"
     fi
 done
 
-if [ ${#EXISTING_FILES[@]} -eq 0 ]; 键，然后
-    echo "没有可打包的文件或文件夹，脚本退出" | tee -a "$LOG_FILE"
+if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
+    echo "No files or directories to backup, exiting..." | tee -a "$LOG_FILE"
     exit 1
 fi
 
 # ----------------------------
-# 执行打包
+# Execute backup
 # ----------------------------
-echo "正在打包文件..." | tee -a "$LOG_FILE"
+echo "Backing up files..." | tee -a "$LOG_FILE"
 tar -czvf "$BACKUP_FILE" "${EXCLUDE_PARAMS[@]}" "${EXISTING_FILES[@]}" >> "$LOG_FILE" 2>&1
 if [ $? -ne 0 ]; then
-    echo "备份失败，请检查权限和路径" | tee -a "$LOG_FILE"
+    echo "Backup failed. Check permissions and paths." | tee -a "$LOG_FILE"
     exit 1
 fi
 
 # ----------------------------
-# 验证备份完整性
+# Verify backup integrity
 # ----------------------------
-echo "验证备份完整性..." | tee -a "$LOG_FILE"
+echo "Verifying backup integrity..." | tee -a "$LOG_FILE"
 tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "备份验证通过 ✅" | tee -a "$LOG_FILE"
+    echo "Backup verified successfully ✅" | tee -a "$LOG_FILE"
 else
-    echo "备份验证失败 ❌" | tee -a "$LOG_FILE"
+    echo "Backup verification failed ❌" | tee -a "$LOG_FILE"
     exit 1
 fi
 
 # ----------------------------
-# 显示备份大小
+# Show backup size
 # ----------------------------
 BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-echo "备份完成：$BACKUP_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
+echo "Backup completed: $BACKUP_FILE, size: $BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
-# 备份轮转：保留最近 3 个备份
+# Backup rotation: keep last 3 backups
 # ----------------------------
 MAX_BACKUPS=3
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$(($MAX_BACKUPS + 1)))
-    echo "删除旧备份文件：" | tee -a "$LOG_FILE"
+    echo "Deleting old backups:" | tee -a "$LOG_FILE"
     echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
 fi
 
 # ----------------------------
-# 日志：备份结束
+# Log: backup end
 # ----------------------------
-echo "备份结束：$(date)" >> "$LOG_FILE"
+echo "Backup end: $(date)" >> "$LOG_FILE"
 echo "===============================" >> "$LOG_FILE"
