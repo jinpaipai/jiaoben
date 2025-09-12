@@ -1,26 +1,6 @@
 #!/bin/bash
 
 # ----------------------------
-# 自动检测 GPG 并安装
-# ----------------------------
-if ! command -v gpg >/dev/null 2>&1; then
-    echo "⚠️ GPG 未安装，正在自动安装 gnupg..."
-    if command -v apt >/dev/null 2>&1; then
-        sudo apt update && sudo apt install -y gnupg
-    else
-        echo "❌ 系统没有 apt，请手动安装 gnupg"
-        exit 1
-    fi
-
-    if ! command -v gpg >/dev/null 2>&1; then
-        echo "❌ GPG 安装失败，请手动安装 gnupg"
-        exit 1
-    else
-        echo "✅ GPG 安装成功"
-    fi
-fi
-
-# ----------------------------
 # 设置备份目标路径
 # ----------------------------
 BACKUP_DIR="/root/backup"
@@ -29,7 +9,6 @@ LOG_FILE="$BACKUP_DIR/backup.log"
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
-ENCRYPTED_FILE="$BACKUP_FILE.gpg"
 
 # ----------------------------
 # 指定需要打包的文件夹和文件
@@ -121,7 +100,7 @@ echo "备份开始：$(date)" >> "$LOG_FILE"
 # 检查文件是否存在
 # ----------------------------
 EXISTING_FILES=()
-for FILE in "${FILES_TO_BACKUP[@]}"; do
+for FILE 在 "${FILES_TO_BACKUP[@]}"; do
     if [ -e "$FILE" ]; then
         EXISTING_FILES+=("$FILE")
     else
@@ -129,7 +108,7 @@ for FILE in "${FILES_TO_BACKUP[@]}"; do
     fi
 done
 
-if [ ${#EXISTING_FILES[@]} -eq 0 ]; then
+if [ ${#EXISTING_FILES[@]} -eq 0 ]; 键，然后
     echo "没有可打包的文件或文件夹，脚本退出" | tee -a "$LOG_FILE"
     exit 1
 fi
@@ -157,32 +136,19 @@ else
 fi
 
 # ----------------------------
-# 加密压缩包
-# ----------------------------
-echo "请输入加密密码（解压时需要输入同样的密码）："
-gpg -c --batch --yes "$BACKUP_FILE"
-if [ $? -eq 0 ]; then
-    echo "备份文件已加密：$ENCRYPTED_FILE" | tee -a "$LOG_FILE"
-    rm -f "$BACKUP_FILE"
-else
-    echo "加密失败 ❌" | tee -a "$LOG_FILE"
-    exit 1
-fi
-
-# ----------------------------
 # 显示备份大小
 # ----------------------------
-BACKUP_SIZE=$(du -h "$ENCRYPTED_FILE" | cut -f1)
-echo "备份完成：$ENCRYPTED_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
+BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+echo "备份完成：$BACKUP_FILE，大小：$BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
 # 备份轮转：保留最近 3 个备份
 # ----------------------------
 MAX_BACKUPS=3
-BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
+BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
-    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg | tail -n +$(($MAX_BACKUPS + 1)))
+    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$(($MAX_BACKUPS + 1)))
     echo "删除旧备份文件：" | tee -a "$LOG_FILE"
     echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
