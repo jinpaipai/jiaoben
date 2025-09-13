@@ -14,6 +14,7 @@ BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
 # Specify files and directories to backup
 # ----------------------------
 FILES_TO_BACKUP=(
+    "/alist"
     "/root/.ssh"
     "/etc/aria2"
     "/root/AdGuardHome"
