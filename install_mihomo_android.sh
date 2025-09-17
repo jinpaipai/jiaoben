@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# install_mihomo_android_hotspot.sh - 安装/更新 Mihomo 并配置支持热点访问的快捷脚本
+# install_mihomo_android.sh - 安装/更新 Mihomo 并配置快捷脚本（Termux 安全目录版）
 
 # -----------------------------
 # 配置参数
@@ -12,7 +12,6 @@ TMP_DIR="$HOME/tmp"
 
 # 创建临时目录
 mkdir -p "$TMP_DIR"
-mkdir -p "$TASK_DIR"
 
 # -----------------------------
 # 检测架构
@@ -95,24 +94,16 @@ rm -f "$TMP_FILE"
 echo "[INFO] Mihomo 已安装到 $INSTALL_DIR/mihomo ✅"
 
 # -----------------------------
-# 创建快捷脚本
+# 创建任务目录
 # -----------------------------
+mkdir -p "$TASK_DIR"
 
-# restart_mihomo.sh - 热点可访问版本
+# restart_mihomo.sh
 cat > "$TASK_DIR/restart_mihomo.sh" <<'EOF'
 #!/system/bin/sh
-# 杀掉旧进程
 su -c "killall -9 mihomo 2>/dev/null"
-
-# 获取热点IP
-HOTSPOT_IP=$(ip addr show | grep -E 'inet .* brd' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d/ -f1 | head -n1)
-
-# 启动 mihomo 监听所有网卡
-su -c "nohup /data/clash/mihomo -h 0.0.0.0 -d /data/clash/ >/dev/null 2>&1 &"
-
-# 输出访问地址
-echo "mihomo 已重启 ✅"
-echo "局域网/热点设备可访问 http://$HOTSPOT_IP:3000"
+su -c "nohup /data/clash/mihomo -d /data/clash/ >/dev/null 2>&1 &"
+echo "mihomo 已重启"
 EOF
 chmod +x "$TASK_DIR/restart_mihomo.sh"
 
@@ -147,4 +138,4 @@ EOF
 chmod +x "$TASK_DIR/update_mihomo.sh"
 
 echo "[INFO] 快捷脚本已生成 ✅"
-echo "👉 使用命令重启 Mihomo: $TASK_DIR/restart_mihomo.sh"
+echo "👉 订阅链接已写入 $TASK_DIR/update_mihomo.sh"
