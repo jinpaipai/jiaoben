@@ -30,6 +30,7 @@ FILES_TO_BACKUP=(
     "/etc/filebrowser.db"
     "/opt/nezha"
     "/opt/1panel"
+    "/usr/local/sync"
     "/usr/local/bin/lang"
     "/usr/local/bin/1panel-agent"
     "/usr/local/bin/1panel-core"
