@@ -31,6 +31,7 @@ FILES_TO_BACKUP=(
     "/opt/nezha"
     "/opt/1panel"
     "/usr/local/sync"
+    "/usr/local/python"
     "/usr/local/bin/lang"
     "/usr/local/bin/1panel-agent"
     "/usr/local/bin/1panel-core"
