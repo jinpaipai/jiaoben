@@ -4,7 +4,7 @@
 # -----------------------------
 # 配置参数
 # -----------------------------
-MIRROR="https://github.jinpaipai.fun/https://github.com"
+MIRROR="https://github.jinpaipai.fun:1443/https://github.com"
 API="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
 INSTALL_DIR="/data/clash"
 TASK_DIR="$HOME/.shortcuts/tasks"
