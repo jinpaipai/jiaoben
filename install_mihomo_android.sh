@@ -57,7 +57,12 @@ TMP_FILE="$TMP_DIR/mihomo_download"
 # -----------------------------
 # 下载文件
 # -----------------------------
-curl -L --fail -o "$TMP_FILE" "$ASSET_URL"
+echo "[INFO] 尝试从镜像下载..."
+if ! curl -L --fail -o "$TMP_FILE" "$ASSET_URL"; then
+    echo "[WARN] 镜像下载失败，尝试使用 GitHub 官方源..."
+    ORIGIN_URL="https://github.com/${ASSET_URL#*/https://github.com/}"
+    curl -L --fail -o "$TMP_FILE" "$ORIGIN_URL"
+fi
 if [ ! -f "$TMP_FILE" ] || [ ! -s "$TMP_FILE" ]; then
     echo "❌ 下载失败或文件为空"
     exit 1
