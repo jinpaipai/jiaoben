@@ -24,7 +24,7 @@ FILTERED=\"/tmp/xray_filtered.tmp\"
 mkdir -p \"\$DST_DIR\"
 
 # 提取并过滤指定域名和本地 API 调用
-grep -v -E '.*\.xxxyun\.top|.*\.jueduibupao\.top|.*\.6bnw\.top|.*\.sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]' \"\$SRC_LOG\" > \"\$FILTERED\"
+grep -v -E 'accepted udp:|.*\.xxxyun\.top|.*\.jueduibupao\.top|.*\.6bnw\.top|.*\.sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]' "$SRC_LOG"
 
 # 追加到目标日志
 cat \"\$FILTERED\" >> \"\$DST_LOG\"
