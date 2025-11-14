@@ -28,7 +28,7 @@ DST_DIR=\"$DST_DIR\"
 DST_LOG=\"$DST_LOG\"
 
 # 使用 mktemp 创建临时文件，避免并发冲突
-TMP_FILE=\$(mktemp /tmp/xray_tmp.XXXXXX)
+TMP_FILE=$(mktemp /tmp/xray_tmp.XXXXXX)
 
 mkdir -p \"\$DST_DIR\"
 
