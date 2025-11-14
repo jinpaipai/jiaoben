@@ -23,6 +23,9 @@ TMP_FILE=\"/tmp/xray_tmp.log\"
 # 创建目标目录
 mkdir -p \"\$DST_DIR\"
 
+# 1. 排除系统流量
+grep 'email:'
+
 # 1. 排除 UDP 流量
 grep -v 'accepted udp:' \"\$SRC_LOG\" > \"\$TMP_FILE\".step1
 
