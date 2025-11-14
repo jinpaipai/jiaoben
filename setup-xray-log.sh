@@ -3,7 +3,7 @@
 # 一键安装 xray 日志过滤脚本（稳定版）
 # 功能：
 #  - 过滤 UDP 流量
-#  - 排除指定域名和本地 API 调用
+#  - 排除指定域名、本地 API 调用、端口 22000
 #  - 日志大小超过 20MB 自动清空并写入时间戳
 #  - cron 每分钟执行
 # ======================================================
@@ -35,16 +35,24 @@ mkdir -p \"\$DST_DIR\"
 # 1️⃣ 排除 UDP 流量
 grep -v 'accepted udp:' \"\$SRC_LOG\" > \"\$TMP_FILE\".step1
 
-# 2️⃣ 排除指定域名和本地 API 调用
-grep -v -E 'jinpaipai\\.top|jinpaipai\\.fun|paipaijin\\.dpdns\\.org|jinpaipai\\.qzz\\.io|xxxyun\\.top|jueduibupao\\.top|6bnw\\.top|sssyun\\.xyz|captive\\.apple\\.com|dns\\.google|cloudflare-dns\\.com|dns\\.adguard\\.com|doh\\.opendns\\.com|127\\.0\\.0\\.1:.*\\[api -> api\\]' \"\$TMP_FILE\".step1 > \"\$TMP_FILE\".step2
+# 2️⃣ 排除指定域名
+grep -v -E 'jinpaipai\\.top|jinpaipai\\.fun|paipaijin\\.dpdns\\.org|jinpaipai\\.qzz\\.io|xxxyun\\.top|jueduibupao\\.top|6bnw\\.top|sssyun\\.xyz|captive\\.apple\\.com|dns\\.google|cloudflare-dns\\.com|dns\\.adguard\\.com|doh\\.opendns\\.com' \
+    \"\$TMP_FILE\".step1 > \"\$TMP_FILE\".step_domain
 
-# 3️⃣ 追加到目标日志
+# 3️⃣ 过滤本地 API 调用（单独一行）
+grep -v -E '127\\.0\\.0\\.1:[0-9]+.*\\[api -> api\\]' \
+    \"\$TMP_FILE\".step_domain > \"\$TMP_FILE\".step_api
+
+# 4️⃣ 过滤目标端口 22000（单独一行）
+grep -v ':22000' \"\$TMP_FILE\".step_api > \"\$TMP_FILE\".step2
+
+# 5️⃣ 追加到目标日志
 cat \"\$TMP_FILE\".step2 >> \"\$DST_LOG\"
 
 # 删除临时文件
-rm -f \"\$TMP_FILE\".step1 \"\$TMP_FILE\".step2
+rm -f \"\$TMP_FILE\".step1 \"\$TMP_FILE\".step_domain \"\$TMP_FILE\".step_api \"\$TMP_FILE\".step2
 
-# 4️⃣ 控制日志大小（20MB），超过自动清空并写入时间戳
+# 6️⃣ 控制日志大小（20MB），超过自动清空并写入时间戳
 MAX_SIZE=\$((20 * 1024 * 1024))
 if [ -f \"\$DST_LOG\" ]; then
     SIZE=\$(stat -c%s \"\$DST_LOG\")
