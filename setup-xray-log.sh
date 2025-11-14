@@ -36,7 +36,8 @@ mkdir -p \"\$DST_DIR\"
 grep -v 'accepted udp:' \"\$SRC_LOG\" > \"\$TMP_FILE\".step1
 
 # 2️⃣ 排除指定域名和本地 API 调用
-grep -v -E 'jinpaipai\\.top|jinpaipai\\.fun|paipaijin\\.dpdns\\.org|jinpaipai\\.qzz\\.io|xxxyun\\.top|jueduibupao\\.top|6bnw\\.top|sssyun\\.xyz|captive\\.apple\\.com|dns\\.google|cloudflare-dns\\.com|dns\\.adguard\\.com|doh\\.opendns\\.com|127\\.0\\.0\\.1:.*\\[api -> api\\]' \"\$TMP_FILE\".step1 > \"\$TMP_FILE\".step2
+grep -v -E 'jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]|:22000' "$TMP_FILE".step1 > "$TMP_FILE".step2
+
 
 # 3️⃣ 追加到目标日志
 cat \"\$TMP_FILE\".step2 >> \"\$DST_LOG\"
