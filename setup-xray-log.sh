@@ -48,11 +48,11 @@ cat "\$TMP_FILE".step2 >> "\$DST_LOG"
 rm -f "\$TMP_FILE".step*
 
 # 6️⃣ 控制日志大小（20MB 自动清空）
-MAX_SIZE=\$((20 * 1024 * 1024))
+MAX_SIZE=\$((200 * 1024 * 1024))
 if [ -f "\$DST_LOG" ]; then
     SIZE=\$(stat -c%s "\$DST_LOG")
     if [ "\$SIZE" -ge "\$MAX_SIZE" ]; then
-        echo "\$(date '+%Y-%m-%d %H:%M:%S') - 自动清理日志（超过 20MB）" > "\$DST_LOG"
+        echo "\$(date '+%Y-%m-%d %H:%M:%S') - 自动清理日志（超过 200MB）" > "\$DST_LOG"
     fi
 fi
 EOF
