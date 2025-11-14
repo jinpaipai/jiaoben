@@ -1,7 +1,7 @@
 #!/bin/bash
 # ======================================================
-# 一键安装 xray 日志过滤脚本并设置去重定时任务
-# 支持屏蔽泛域名 *.xxxyun.top, *.jueduibupao.top, *.6bnw.top
+# 一键安装 xray 日志过滤脚本（稳定版）
+# 支持屏蔽 UDP 流量、指定泛域名、API 调用
 # ======================================================
 
 # 定义变量
@@ -18,21 +18,24 @@ sudo bash -c "cat > $SCRIPT_PATH << 'EOF'
 SRC_LOG=\"$SRC_LOG\"
 DST_DIR=\"$DST_DIR\"
 DST_LOG=\"$DST_LOG\"
-FILTERED=\"/tmp/xray_filtered.tmp\"
+TMP_FILE=\"/tmp/xray_tmp.log\"
 
 # 创建目标目录
 mkdir -p \"\$DST_DIR\"
 
-# 提取并过滤指定域名和本地 API 调用
-grep -v -E 'accepted udp:|.*\.xxxyun\.top|.*\.jueduibupao\.top|.*\.6bnw\.top|.*\.sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]' "$SRC_LOG"
+# 1. 排除 UDP 流量
+grep -v 'accepted udp:' \"\$SRC_LOG\" > \"\$TMP_FILE\".step1
 
-# 追加到目标日志
-cat \"\$FILTERED\" >> \"\$DST_LOG\"
+# 2. 排除指定域名和本地 API 调用
+grep -v -E '(\.|^)xxxyun\.top|(\.|^)jueduibupao\.top|(\.|^)6bnw\.top|(\.|^)sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]' \"\$TMP_FILE\".step1 > \"\$TMP_FILE\".step2
+
+# 3. 追加到目标日志
+cat \"\$TMP_FILE\".step2 >> \"\$DST_LOG\"
 
 # 删除临时文件
-rm -f \"\$FILTERED\"
+rm -f \"\$TMP_FILE\".step1 \"\$TMP_FILE\".step2
 
-# 控制日志大小，大于 20MB 自动清空
+# 4. 控制日志大小，大于 20MB 自动清空
 MAX_SIZE=\$((20 * 1024 * 1024))
 if [ -f \"\$DST_LOG\" ]; then
     SIZE=\$(stat -c%s \"\$DST_LOG\")
@@ -52,20 +55,16 @@ mkdir -p "$DST_DIR"
 
 # 4️⃣ 配置去重 cron 定时任务
 echo "配置 cron 定时任务（去重）..."
-
-# 获取现有 crontab
 CURRENT_CRON=$(crontab -l 2>/dev/null)
-
-# 定义任务
 TASK_MINUTE="* * * * * $SCRIPT_PATH >/dev/null 2>&1"
 TASK_5DAY="0 0 */5 * * echo \"\" > $DST_LOG"
 
-# 添加每分钟任务（去重）
+# 添加每分钟任务
 if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; then
     (echo "$CURRENT_CRON"; echo "$TASK_MINUTE") | crontab -
 fi
 
-# 添加每5天清理任务（去重）
+# 添加每5天清理任务
 CURRENT_CRON=$(crontab -l 2>/dev/null)
 if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; then
     (echo "$CURRENT_CRON"; echo "$TASK_5DAY") | crontab -
