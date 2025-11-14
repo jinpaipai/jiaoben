@@ -1,16 +1,24 @@
 #!/bin/bash
 # ======================================================
 # 一键安装 xray 日志过滤脚本（稳定版）
-# 支持屏蔽 UDP 流量、指定泛域名、API 调用
+# 功能：
+#  - 过滤 UDP 流量
+#  - 排除指定域名和本地 API 调用
+#  - 日志大小超过 20MB 自动清空并写入时间戳
+#  - cron 每分钟执行
 # ======================================================
 
-# 定义变量
+# ----------------------------
+# 配置变量
+# ----------------------------
 SCRIPT_PATH="/usr/local/bin/xray-log-filter.sh"
 DST_DIR="/usr/local/xray_log"
 DST_LOG="$DST_DIR/xray.log"
 SRC_LOG="/usr/local/x-ui/access.log"
 
-# 1️⃣ 创建日志过滤脚本
+# ----------------------------
+# 创建脚本
+# ----------------------------
 echo "创建 xray 日志过滤脚本..."
 sudo bash -c "cat > $SCRIPT_PATH << 'EOF'
 #!/bin/bash
@@ -18,59 +26,66 @@ sudo bash -c "cat > $SCRIPT_PATH << 'EOF'
 SRC_LOG=\"$SRC_LOG\"
 DST_DIR=\"$DST_DIR\"
 DST_LOG=\"$DST_LOG\"
-TMP_FILE=\"/tmp/xray_tmp.log\"
 
-# 创建目标目录
+# 使用 mktemp 创建临时文件，避免并发冲突
+TMP_FILE=\$(mktemp /tmp/xray_tmp.XXXXXX)
+
 mkdir -p \"\$DST_DIR\"
 
-# 1. 排除系统流量
-grep 'email:'
-
-# 1. 排除 UDP 流量
+# 1️⃣ 排除 UDP 流量
 grep -v 'accepted udp:' \"\$SRC_LOG\" > \"\$TMP_FILE\".step1
 
-# 2. 排除指定域名和本地 API 调用
-grep -v -E '(\.|^)jinpaipai\.top|(\.|^)jinpaipai\.fun|(\.|^)paipaijin\.dpdns.org|(\.|^)jinpaipai\.qzz.io|(\.|^)xxxyun\.top|(\.|^)xxxyun\.top|(\.|^)jueduibupao\.top|(\.|^)6bnw\.top|(\.|^)sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]' \"\$TMP_FILE\".step1 > \"\$TMP_FILE\".step2
+# 2️⃣ 排除指定域名和本地 API 调用
+grep -v -E 'jinpaipai\\.top|jinpaipai\\.fun|paipaijin\\.dpdns\\.org|jinpaipai\\.qzz\\.io|xxxyun\\.top|jueduibupao\\.top|6bnw\\.top|sssyun\\.xyz|captive\\.apple\\.com|dns\\.google|cloudflare-dns\\.com|dns\\.adguard\\.com|doh\\.opendns\\.com|127\\.0\\.0\\.1:.*\\[api -> api\\]' \"\$TMP_FILE\".step1 > \"\$TMP_FILE\".step2
 
-# 3. 追加到目标日志
+# 3️⃣ 追加到目标日志
 cat \"\$TMP_FILE\".step2 >> \"\$DST_LOG\"
 
 # 删除临时文件
 rm -f \"\$TMP_FILE\".step1 \"\$TMP_FILE\".step2
 
-# 4. 控制日志大小，大于 20MB 自动清空
+# 4️⃣ 控制日志大小（20MB），超过自动清空并写入时间戳
 MAX_SIZE=\$((20 * 1024 * 1024))
 if [ -f \"\$DST_LOG\" ]; then
     SIZE=\$(stat -c%s \"\$DST_LOG\")
     if [ \"\$SIZE\" -ge \"\$MAX_SIZE\" ]; then
-        echo \"\" > \"\$DST_LOG\"
-        echo \"\$(date '+%Y-%m-%d %H:%M:%S') - 自动清理日志（超过 20MB）\" >> \"\$DST_LOG\"
+        echo \"\$(date '+%Y-%m-%d %H:%M:%S') - 自动清理日志（超过 20MB）\" > \"\$DST_LOG\"
     fi
 fi
 EOF"
 
-# 2️⃣ 赋予可执行权限
+# ----------------------------
+# 授权脚本可执行
+# ----------------------------
 echo "赋予脚本可执行权限..."
 sudo chmod +x $SCRIPT_PATH
 
-# 3️⃣ 创建日志目录（防止未创建）
+# ----------------------------
+# 创建日志目录
+# ----------------------------
 mkdir -p "$DST_DIR"
 
-# 4️⃣ 配置去重 cron 定时任务
-echo "配置 cron 定时任务（去重）..."
-CURRENT_CRON=$(crontab -l 2>/dev/null)
-TASK_MINUTE="* * * * * $SCRIPT_PATH >/dev/null 2>&1"
-TASK_5DAY="0 0 */5 * * echo \"\" > $DST_LOG"
+# ----------------------------
+# 配置 cron 任务
+# ----------------------------
+echo "配置 cron 定时任务..."
 
-# 添加每分钟任务
-if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; then
-    (echo "$CURRENT_CRON"; echo "$TASK_MINUTE") | crontab -
+# 每分钟执行 xray 日志过滤
+CRON_MINUTE="* * * * * \"$SCRIPT_PATH\" >/dev/null 2>&1 # xray-log-filter"
+
+# 每5天清空日志
+CRON_5DAY="0 0 */5 * * echo \"\$(date '+\%Y-\%m-\%d \%H:\%M:\%S') - 自动5天清理日志\" > \"$DST_LOG\" # xray-log-clean"
+
+# 添加 cron 任务（去重）
+CURRENT_CRON=$(crontab -l 2>/dev/null || true)
+
+if ! grep -Fq "# xray-log-filter" <<< "$CURRENT_CRON"; then
+    (echo "$CURRENT_CRON"; echo "$CRON_MINUTE") | crontab -
 fi
 
-# 添加每5天清理任务
-CURRENT_CRON=$(crontab -l 2>/dev/null)
-if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; then
-    (echo "$CURRENT_CRON"; echo "$TASK_5DAY") | crontab -
+CURRENT_CRON=$(crontab -l 2>/dev/null || true)
+if ! grep -Fq "# xray-log-clean" <<< "$CURRENT_CRON"; then
+    (echo "$CURRENT_CRON"; echo "$CRON_5DAY") | crontab -
 fi
 
 echo "✅ 设置完成！"
