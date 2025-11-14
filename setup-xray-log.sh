@@ -61,13 +61,13 @@ TASK_MINUTE="* * * * * $SCRIPT_PATH >/dev/null 2>&1"
 TASK_5DAY="0 0 */5 * * echo \"\" > $DST_LOG"
 
 # 添加每分钟任务（去重）
-if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; 键，然后
+if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; then
     (echo "$CURRENT_CRON"; echo "$TASK_MINUTE") | crontab -
 fi
 
 # 添加每5天清理任务（去重）
-CURRENT_CRON=$(crontab -l 2>/dev/null) # 再次读取最新 crontab
-if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; 键，然后
+CURRENT_CRON=$(crontab -l 2>/dev/null)
+if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; then
     (echo "$CURRENT_CRON"; echo "$TASK_5DAY") | crontab -
 fi
 
