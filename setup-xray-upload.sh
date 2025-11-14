@@ -5,11 +5,17 @@
 
 UPLOAD_SCRIPT="/usr/local/bin/xray-log-upload.sh"
 
+# -----------------------------
+# 用户输入
+# -----------------------------
 echo "===> 请输入远程服务器域名/IP（例如：www.baidu.com）："
 read -r REMOTE_ADDR
 
 echo "===> 请输入 SSH 端口（例如：12345）："
 read -r PORT
+
+echo "===> 请输入本台服务器名称（例如：server01）："
+read -r SERVER_NAME
 
 # ===============================
 # 生成上传脚本
@@ -19,8 +25,8 @@ echo "===> 创建上传脚本：$UPLOAD_SCRIPT"
 cat > "$UPLOAD_SCRIPT" <<EOF
 #!/bin/bash
 
-# 用户自定义服务器名（每台服务器不同即可）
-SERVER_NAME="server01"   # ← 可自行修改
+# 用户自定义服务器名（每台服务器不同）
+SERVER_NAME="$SERVER_NAME"
 
 # 本地日志
 SRC_LOG="/usr/local/xray_log/xray.log"
@@ -37,7 +43,6 @@ EOF
 
 chmod +x "$UPLOAD_SCRIPT"
 
-
 # ===============================
 # 创建 systemd service
 # ===============================
@@ -53,7 +58,6 @@ Description=Upload Xray Log to Central Server
 Type=oneshot
 ExecStart=$UPLOAD_SCRIPT
 EOF
-
 
 # ===============================
 # 创建 systemd timer（每小时执行）
@@ -74,7 +78,6 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-
 # ===============================
 # 启动 systemd
 # ===============================
@@ -90,6 +93,7 @@ systemctl list-timers | grep xray-log-upload
 echo "==========================================================="
 echo "远程地址      : $REMOTE_ADDR"
 echo "SSH 端口      : $PORT"
+echo "服务器名称    : $SERVER_NAME"
 echo "上传脚本路径  : $UPLOAD_SCRIPT"
 echo "定时器        : xray-log-upload.timer（每小时执行）"
 echo "==========================================================="
