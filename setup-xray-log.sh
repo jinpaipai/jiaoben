@@ -1,6 +1,7 @@
 #!/bin/bash
 # ======================================================
 # 一键安装 xray 日志过滤脚本并设置去重定时任务
+# 支持屏蔽泛域名 *.xxxyun.top, *.jueduibupao.top, *.6bnw.top
 # ======================================================
 
 # 定义变量
@@ -23,7 +24,7 @@ FILTERED=\"/tmp/xray_filtered.tmp\"
 mkdir -p \"\$DST_DIR\"
 
 # 提取并过滤指定域名和本地 API 调用
-grep -v -E ".*\.xxxyun\.top|.*\.jueduibupao\.top|.*\.6bnw\.top|.*\.sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]" "$SRC_LOG" > "$FILTERED"
+grep -v -E '.*\.xxxyun\.top|.*\.jueduibupao\.top|.*\.6bnw\.top|.*\.sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|127\.0\.0\.1:.*\[api -> api\]' \"\$SRC_LOG\" > \"\$FILTERED\"
 
 # 追加到目标日志
 cat \"\$FILTERED\" >> \"\$DST_LOG\"
@@ -60,13 +61,13 @@ TASK_MINUTE="* * * * * $SCRIPT_PATH >/dev/null 2>&1"
 TASK_5DAY="0 0 */5 * * echo \"\" > $DST_LOG"
 
 # 添加每分钟任务（去重）
-if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; then
+if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; 键，然后
     (echo "$CURRENT_CRON"; echo "$TASK_MINUTE") | crontab -
 fi
 
 # 添加每5天清理任务（去重）
 CURRENT_CRON=$(crontab -l 2>/dev/null) # 再次读取最新 crontab
-if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; then
+if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; 键，然后
     (echo "$CURRENT_CRON"; echo "$TASK_5DAY") | crontab -
 fi
 
