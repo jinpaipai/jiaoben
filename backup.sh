@@ -1,5 +1,13 @@
 #!/bin/bash
 
+echo "=== Installing backup script & systemd timer ==="
+
+# ----------------------------
+# 1. Write /usr/local/bin/backup.sh
+# ----------------------------
+cat >/usr/local/bin/backup.sh <<'EOF'
+#!/bin/bash
+
 # ----------------------------
 # Set backup target directory
 # ----------------------------
@@ -47,7 +55,7 @@ FILES_TO_BACKUP=(
     "/etc/x-ui/"
     "/usr/local/h-ui"
     "/etc/mihomo"
-    "/usr/local/bin/mihomo"
+    "/usr-local/bin/mihomo"
     "/etc/sysctl.conf"
     "/root/.cloudflared"
     "/usr/local/bin/cloudflared"
@@ -100,9 +108,6 @@ done
 echo "===============================" >> "$LOG_FILE"
 echo "Backup start: $(date)" >> "$LOG_FILE"
 
-# ----------------------------
-# Check if files exist
-# ----------------------------
 EXISTING_FILES=()
 for FILE in "${FILES_TO_BACKUP[@]}"; do
     if [ -e "$FILE" ]; then
@@ -133,9 +138,9 @@ fi
 echo "Verifying backup integrity..." | tee -a "$LOG_FILE"
 tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "Backup verified successfully ✅" | tee -a "$LOG_FILE"
+    echo "Backup verified successfully" | tee -a "$LOG_FILE"
 else
-    echo "Backup verification failed ❌" | tee -a "$LOG_FILE"
+    echo "Backup verification failed" | tee -a "$LOG_FILE"
     exit 1
 fi
 
@@ -146,7 +151,7 @@ BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
 echo "Backup completed: $BACKUP_FILE, size: $BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
-# Backup rotation: keep last 3 backups
+# Rotation: keep last 3 backups
 # ----------------------------
 MAX_BACKUPS=3
 BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
@@ -158,8 +163,50 @@ if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
     rm -f $OLDEST_BACKUPS
 fi
 
-# ----------------------------
-# Log: backup end
-# ----------------------------
 echo "Backup end: $(date)" >> "$LOG_FILE"
 echo "===============================" >> "$LOG_FILE"
+EOF
+
+chmod +x /usr/local/bin/backup.sh
+
+
+
+# ----------------------------
+# 2. Write backup.service
+# ----------------------------
+cat >/etc/systemd/system/backup.service <<'EOF'
+[Unit]
+Description=Run system backup script
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup.sh
+EOF
+
+
+
+# ----------------------------
+# 3. Write backup.timer
+# ----------------------------
+cat >/etc/systemd/system/backup.timer <<'EOF'
+[Unit]
+Description=Daily backup at 02:00
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+
+
+# ----------------------------
+# 4. Enable systemd
+# ----------------------------
+systemctl daemon-reload
+systemctl enable --now backup.timer
+
+echo "=== Backup system installed successfully ==="
+systemctl status backup.timer --no-pager
