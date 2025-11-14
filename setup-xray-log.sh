@@ -1,6 +1,6 @@
 #!/bin/bash
 # ======================================================
-# 一键安装 xray 日志过滤脚本并设置定时任务
+# 一键安装 xray 日志过滤脚本并设置去重定时任务
 # ======================================================
 
 # 定义变量
@@ -49,10 +49,26 @@ sudo chmod +x $SCRIPT_PATH
 # 3️⃣ 创建日志目录（防止未创建）
 mkdir -p "$DST_DIR"
 
-# 4️⃣ 配置定时任务
-echo "配置 cron 定时任务..."
-# 先删除已有同名任务避免重复
-(crontab -l 2>/dev/null | grep -v "$SCRIPT_PATH"; echo "* * * * * $SCRIPT_PATH >/dev/null 2>&1"; echo "0 0 */5 * * echo \"\" > $DST_LOG") | crontab -
+# 4️⃣ 配置去重 cron 定时任务
+echo "配置 cron 定时任务（去重）..."
+
+# 获取现有 crontab
+CURRENT_CRON=$(crontab -l 2>/dev/null)
+
+# 定义任务
+TASK_MINUTE="* * * * * $SCRIPT_PATH >/dev/null 2>&1"
+TASK_5DAY="0 0 */5 * * echo \"\" > $DST_LOG"
+
+# 添加每分钟任务（去重）
+if ! grep -Fq "$TASK_MINUTE" <<< "$CURRENT_CRON"; then
+    (echo "$CURRENT_CRON"; echo "$TASK_MINUTE") | crontab -
+fi
+
+# 添加每5天清理任务（去重）
+CURRENT_CRON=$(crontab -l 2>/dev/null) # 再次读取最新 crontab
+if ! grep -Fq "$TASK_5DAY" <<< "$CURRENT_CRON"; then
+    (echo "$CURRENT_CRON"; echo "$TASK_5DAY") | crontab -
+fi
 
 echo "✅ 设置完成！"
 echo "脚本路径：$SCRIPT_PATH"
