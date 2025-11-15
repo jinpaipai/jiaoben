@@ -1,148 +1,99 @@
 #!/bin/bash
-# ======================================================
-# 一键安装 xray systemd 日志过滤 + 定期清理服务
-# ======================================================
+# =======================================================
+# 交互式创建 xray-log-upload.sh + systemd 定时器（每小时）
+# =======================================================
 
-SCRIPT_FILTER="/usr/local/bin/xray-log-filter.sh"
-SCRIPT_CLEAN="/usr/local/bin/xray-log-clean.sh"
-DST_DIR="/usr/local/xray_log"
-DST_LOG="$DST_DIR/xray.log"
-SRC_LOG="/usr/local/x-ui/access.log"
+UPLOAD_SCRIPT="/usr/local/bin/xray-log-upload.sh"
 
-echo "===> 创建 xray 日志目录..."
-mkdir -p "$DST_DIR"
+# -----------------------------
+# 用户输入
+# -----------------------------
+echo "===> 请输入远程服务器域名/IP（例如：www.baidu.com）："
+read -r REMOTE_ADDR
 
-# ======================================================
-# 1. 创建每分钟执行的过滤脚本
-# ======================================================
-echo "===> 创建过滤脚本：$SCRIPT_FILTER"
+echo "===> 请输入 SSH 端口（例如：12345）："
+read -r PORT
 
-cat > "$SCRIPT_FILTER" <<'EOF'
+echo "===> 请输入本台服务器名称（例如：server01）："
+read -r SERVER_NAME
+
+# ===============================
+# 生成上传脚本
+# ===============================
+echo "===> 创建上传脚本：$UPLOAD_SCRIPT"
+
+cat > "$UPLOAD_SCRIPT" <<EOF
 #!/bin/bash
 
-SRC_LOG="/usr/local/x-ui/access.log"
-DST_DIR="/usr/local/xray_log"
-DST_LOG="$DST_DIR/xray.log"
+# 用户自定义服务器名（每台服务器不同）
+SERVER_NAME="$SERVER_NAME"
 
-TMP_FILE=$(mktemp /tmp/xray_tmp.XXXXXX)
+# 本地日志
+SRC_LOG="/usr/local/xray_log/xray.log"
 
-mkdir -p "$DST_DIR"
+# 远程服务器（root@ 固定，域名/IP 由用户输入）
+REMOTE="root@$REMOTE_ADDR"
+REMOTE_DIR="/srv/xray_logs"
+PORT=$PORT
+KEY="/root/.ssh/xray_sync"
 
-# 1️⃣ 排除 UDP 流量
-grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
-
-# 2️⃣ 排除指定域名（加入 www.mathworks.com）
-grep -v -E 'jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com' \
-    "$TMP_FILE".step1 > "$TMP_FILE".step_domain
-
-# 3️⃣ 过滤本地 API 调用
-grep -v -E '127\.0\.0\.1:[0-9]+.*\[api -> api\]' \
-    "$TMP_FILE".step_domain > "$TMP_FILE".step_api
-
-# 4️⃣ 过滤端口 22000
-grep -v ':22000' "$TMP_FILE".step_api > "$TMP_FILE".step2
-
-# 5️⃣ 追加到目标日志
-cat "$TMP_FILE".step2 >> "$DST_LOG"
-
-rm -f "$TMP_FILE".step*
-
-# 6️⃣ 控制日志大小（200MB 自动清空）
-MAX_SIZE=$((200 * 1024 * 1024))
-if [ -f "$DST_LOG" ]; then
-    SIZE=$(stat -c%s "$DST_LOG")
-    if [ "$SIZE" -ge "$MAX_SIZE" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') - 自动清理日志（超过 200MB）" > "$DST_LOG"
-    fi
-fi
+# 上传日志
+scp -P \$PORT -i \$KEY "\$SRC_LOG" "\$REMOTE:\$REMOTE_DIR/\$SERVER_NAME.log"
 EOF
 
-chmod +x "$SCRIPT_FILTER"
+chmod +x "$UPLOAD_SCRIPT"
 
-# ======================================================
-# 2. 创建每 5 天清空日志的脚本
-# ======================================================
-echo "===> 创建 5 天清理脚本：$SCRIPT_CLEAN"
+# ===============================
+# 创建 systemd service
+# ===============================
+SERVICE_FILE="/etc/systemd/system/xray-log-upload.service"
 
-cat > "$SCRIPT_CLEAN" <<'EOF'
-#!/bin/bash
-DST_LOG="/usr/local/xray_log/xray.log"
-echo "$(date '+%Y-%m-%d %H:%M:%S') - 自动5天清理日志" > "$DST_LOG"
-EOF
+echo "===> 创建 systemd 服务：$SERVICE_FILE"
 
-chmod +x "$SCRIPT_CLEAN"
-
-# ======================================================
-# 3. 创建 systemd 服务与 timer（每分钟）
-# ======================================================
-echo "===> 创建 systemd: xray-log-filter.service & timer"
-
-cat > /etc/systemd/system/xray-log-filter.service <<EOF
+cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=Xray Log Filter Service
-Wants=xray-log-filter.timer
+Description=Upload Xray Log to Central Server
 
 [Service]
 Type=oneshot
-ExecStart=$SCRIPT_FILTER
+ExecStart=$UPLOAD_SCRIPT
 EOF
 
-cat > /etc/systemd/system/xray-log-filter.timer <<EOF
+# ===============================
+# 创建 systemd timer（每小时执行）
+# ===============================
+TIMER_FILE="/etc/systemd/system/xray-log-upload.timer"
+
+echo "===> 创建 systemd 定时器：$TIMER_FILE"
+
+cat > "$TIMER_FILE" <<EOF
 [Unit]
-Description=Run Xray Log Filter every minute
+Description=Run Xray Log Upload Every Hour
 
 [Timer]
-OnCalendar=*-*-* *:*:00
-AccuracySec=10s
+OnCalendar=*-*-* *:00:00
 Persistent=true
 
 [Install]
 WantedBy=timers.target
 EOF
 
-# ======================================================
-# 4. 创建 systemd 服务与 timer（每 5 天）
-# ======================================================
-echo "===> 创建 systemd: xray-log-clean.service & timer"
-
-cat > /etc/systemd/system/xray-log-clean.service <<EOF
-[Unit]
-Description=Xray Log Clean (5 Days)
-
-[Service]
-Type=oneshot
-ExecStart=$SCRIPT_CLEAN
-EOF
-
-cat > /etc/systemd/system/xray-log-clean.timer <<EOF
-[Unit]
-Description=Run Xray Log Clean every 5 days
-
-[Timer]
-OnUnitActiveSec=5d
-AccuracySec=1h
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-# ======================================================
-# 5. 启动 systemd
-# ======================================================
+# ===============================
+# 启动 systemd
+# ===============================
 echo "===> 重新加载 systemd..."
 systemctl daemon-reload
 
-echo "===> 启动并启用定时器..."
-systemctl enable --now xray-log-filter.timer
-systemctl enable --now xray-log-clean.timer
+echo "===> 启用定时器（每小时上传一次）..."
+systemctl enable --now xray-log-upload.timer
 
-echo "===> 查看生效的定时器..."
-systemctl list-timers | grep xray
+echo "===> 完成！查看定时器："
+systemctl list-timers | grep xray-log-upload
 
-echo "======================================================="
-echo "安装完成！"
-echo "日志过滤脚本：$SCRIPT_FILTER"
-echo "日志清理脚本：$SCRIPT_CLEAN"
-echo "日志文件：$DST_LOG"
-echo "======================================================="
+echo "==========================================================="
+echo "远程地址      : $REMOTE_ADDR"
+echo "SSH 端口      : $PORT"
+echo "服务器名称    : $SERVER_NAME"
+echo "上传脚本路径  : $UPLOAD_SCRIPT"
+echo "定时器        : xray-log-upload.timer（每小时执行）"
+echo "==========================================================="
