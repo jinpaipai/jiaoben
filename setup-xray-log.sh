@@ -1,6 +1,6 @@
 #!/bin/bash
 # ======================================================
-# 一键安装 xray systemd 日志过滤 + 定期清理服务
+# 一键安装 xray systemd 日志提取过滤
 # ======================================================
 
 SCRIPT_FILTER="/usr/local/bin/xray-log-filter.sh"
@@ -33,21 +33,25 @@ grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
 
 # 2️⃣ 排除指定域名
 grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com' \
-    "$TMP_FILE".step1 > "$TMP_FILE".step_domain
+    "$TMP_FILE".step1 > "$TMP_FILE".step2
 
-# 3️⃣ 过滤本地 API 调用
+# 3️⃣ 排除指定入口 IP：8.138.126.101
+grep -v 'from 8\.138\.126\.101:' "$TMP_FILE".step2 > "$TMP_FILE".step3
+
+# 4️⃣ 过滤本地 API 调用
 grep -v -E '127\.0\.0\.1:[0-9]+.*\[api -> api\]' \
-    "$TMP_FILE".step_domain > "$TMP_FILE".step_api
+    "$TMP_FILE".step3 > "$TMP_FILE".step4
 
-# 4️⃣ 过滤端口 22000
-grep -v ':22000' "$TMP_FILE".step_api > "$TMP_FILE".step2
+# 5️⃣ 过滤端口 22000
+grep -v ':22000' "$TMP_FILE".step4 > "$TMP_FILE".step_filtered
 
-# 5️⃣ 追加到目标日志
-cat "$TMP_FILE".step2 >> "$DST_LOG"
+# 6️⃣ 追加到日志文件
+cat "$TMP_FILE".step_filtered >> "$DST_LOG"
 
+# 清理临时文件
 rm -f "$TMP_FILE".step*
 
-# 6️⃣ 控制日志大小（200MB 自动清空）
+# 7️⃣ 控制日志大小（200MB 自动清空）
 MAX_SIZE=$((200 * 1024 * 1024))
 if [ -f "$DST_LOG" ]; then
     SIZE=$(stat -c%s "$DST_LOG")
@@ -116,7 +120,7 @@ EOF
 
 cat > /etc/systemd/system/xray-log-clean.timer <<EOF
 [Unit]
-Description=Run Xray Log Clean every 5 days
+Description=Run Xray Log Clean every 5 天之前
 
 [Timer]
 OnUnitActiveSec=5d
