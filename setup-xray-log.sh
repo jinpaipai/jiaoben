@@ -133,8 +133,13 @@ EOF
 echo "===> 重新加载 systemd..."
 systemctl daemon-reload
 
-echo "===> 启动并启用定时器..."
+echo "===> 启动并启用过滤定时器..."
 systemctl enable --now xray-log-filter.timer
+
+echo "===> 手动启动一次 clean 服务以激活 timer..."
+systemctl start xray-log-clean.service
+
+echo "===> 启动并启用清理定时器..."
 systemctl enable --now xray-log-clean.timer
 
 echo "===> 查看生效的定时器..."
