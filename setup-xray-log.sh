@@ -32,8 +32,8 @@ mkdir -p "\$DST_DIR"
 grep -v 'accepted udp:' "\$SRC_LOG" > "\$TMP_FILE".step1
 
 # 2️⃣ 排除指定域名
-grep -v -E 'jinpaipai\\.top|jinpaipai\\.fun|paipaijin\\.dpdns\\.org|jinpaipai\\.qzz\\.io|xxxyun\\.top|jueduibupao\\.top|6bnw\\.top|sssyun\\.xyz|captive\\.apple\\.com|dns\\.google|cloudflare-dns\\.com|dns\\.adguard\\.com|doh\\.opendns\\.com' \
-    "\$TMP_FILE".step1 > "\$TMP_FILE".step_domain
+grep -v -E 'jinpaipai\\.top|jinpaipai\\.fun|paipaijin\\.dpdns\\.org|jinpaipai\\.qzz\\.io|xxxyun\\.top|jueduibupao\\.top|6bnw\\.top|sssyun\\.xyz|captive\\.apple\\.com|dns\\.google|cloudflare-dns\\.com|dns\\.adguard\\.com|doh\\.opendns\\.com|www\\.mathworks\\.com' \
+    "$TMP_FILE".step1 > "$TMP_FILE".step_domain
 
 # 3️⃣ 过滤本地 API 调用
 grep -v -E '127\\.0\\.0\\.1:[0-9]+.*\\[api -> api\\]' \
