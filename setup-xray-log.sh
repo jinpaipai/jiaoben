@@ -31,8 +31,8 @@ mkdir -p "$DST_DIR"
 # 1️⃣ 排除 UDP 流量
 grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
 
-# 2️⃣ 排除指定域名（加入 www.mathworks.com）
-grep -v -E 'jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com' \
+# 2️⃣ 排除指定域名
+grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com' \
     "$TMP_FILE".step1 > "$TMP_FILE".step_domain
 
 # 3️⃣ 过滤本地 API 调用
