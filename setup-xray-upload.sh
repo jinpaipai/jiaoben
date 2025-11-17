@@ -51,11 +51,15 @@ echo "===> 上传日志压缩包到远程服务器 ..."
 scp -P \$PORT -i \$KEY "\$TMP_ARCHIVE" "\$REMOTE:\$REMOTE_DIR/"
 
 # -----------------------------
-# 远程解压
+# 远程解压并改名
 # -----------------------------
 REMOTE_ARCHIVE="\$REMOTE_DIR/\$(basename "\$TMP_ARCHIVE")"
-echo "===> 在远程服务器解压日志 ..."
-ssh -p \$PORT -i \$KEY root@$REMOTE_ADDR "tar -xzf \$REMOTE_ARCHIVE -C \$REMOTE_DIR && rm -f \$REMOTE_ARCHIVE"
+echo "===> 在远程服务器解压日志并改名为 \$SERVER_NAME.log ..."
+ssh -p \$PORT -i \$KEY root@$REMOTE_ADDR "
+  tar -xzf \$REMOTE_ARCHIVE -C \$REMOTE_DIR && \
+  mv \$REMOTE_DIR/xray.log \$REMOTE_DIR/\$SERVER_NAME.log && \
+  rm -f \$REMOTE_ARCHIVE
+"
 
 # -----------------------------
 # 本地清理临时压缩包
