@@ -30,6 +30,7 @@ SERVER_NAME="$SERVER_NAME"
 
 # 本地日志
 SRC_LOG="/usr/local/xray_log/xray.log"
+TMP_ARCHIVE="/tmp/\$SERVER_NAME-\$(date +%Y%m%d%H%M%S).tar.gz"
 
 # 远程服务器（root@ 固定，域名/IP 由用户输入）
 REMOTE="root@$REMOTE_ADDR"
@@ -37,8 +38,30 @@ REMOTE_DIR="/srv/xray_logs"
 PORT=$PORT
 KEY="/root/.ssh/xray_sync"
 
-# 上传日志
-scp -P \$PORT -i \$KEY "\$SRC_LOG" "\$REMOTE:\$REMOTE_DIR/\$SERVER_NAME.log"
+# -----------------------------
+# 压缩日志
+# -----------------------------
+echo "===> 压缩日志文件到 \$TMP_ARCHIVE ..."
+tar -czf "\$TMP_ARCHIVE" -C "\$(dirname "\$SRC_LOG")" "\$(basename "\$SRC_LOG")"
+
+# -----------------------------
+# 上传压缩包
+# -----------------------------
+echo "===> 上传日志压缩包到远程服务器 ..."
+scp -P \$PORT -i \$KEY "\$TMP_ARCHIVE" "\$REMOTE:\$REMOTE_DIR/"
+
+# -----------------------------
+# 远程解压
+# -----------------------------
+REMOTE_ARCHIVE="\$REMOTE_DIR/\$(basename "\$TMP_ARCHIVE")"
+echo "===> 在远程服务器解压日志 ..."
+ssh -p \$PORT -i \$KEY root@$REMOTE_ADDR "tar -xzf \$REMOTE_ARCHIVE -C \$REMOTE_DIR && rm -f \$REMOTE_ARCHIVE"
+
+# -----------------------------
+# 本地清理临时压缩包
+# -----------------------------
+rm -f "\$TMP_ARCHIVE"
+echo "===> 完成上传并解压日志！"
 EOF
 
 chmod +x "$UPLOAD_SCRIPT"
