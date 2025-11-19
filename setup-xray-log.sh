@@ -35,15 +35,15 @@ grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
 grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com' \
     "$TMP_FILE".step1 > "$TMP_FILE".step2
 
-# 3️⃣ 排除指定入口 IP：8.138.126.101
-grep -v 'from 8\.138\.126\.101:' "$TMP_FILE".step2 > "$TMP_FILE".step3
+# 3️⃣ 过滤目标端口 80 与 22000（不会误杀来源端口）
+grep -v -E 'tcp:.*:(80|22000)[[:space:]]' "$TMP_FILE".step2 > "$TMP_FILE".step3
 
 # 4️⃣ 过滤本地 API 调用
 grep -v -E '127\.0\.0\.1:[0-9]+.*\[api -> api\]' \
     "$TMP_FILE".step3 > "$TMP_FILE".step4
 
-# 5️⃣ 过滤端口 22000
-grep -v ':22000' "$TMP_FILE".step4 > "$TMP_FILE".step_filtered
+# 5️⃣ 最终输出到 step_filtered
+cp "$TMP_FILE".step4 "$TMP_FILE".step_filtered
 
 # 6️⃣ 追加到日志文件
 cat "$TMP_FILE".step_filtered >> "$DST_LOG"
