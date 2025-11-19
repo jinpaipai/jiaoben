@@ -104,6 +104,7 @@ if [ $? -eq 0 ]; then
         "mihomo.service"
         "nodepass.service"
         "AdGuardHome.service"
+        "/etc/systemd/system/s-ui.service"
         "aria2.service"
         "cron.service"
     )
