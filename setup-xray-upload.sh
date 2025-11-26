@@ -66,9 +66,11 @@ REMOTE_ARCHIVE="\$REMOTE_DIR/\$(basename "\$TMP_ARCHIVE")"
 echo "===> 在远程服务器解压日志并覆盖为 \$SERVER_NAME.log ..."
 
 ssh -p "\$PORT" -i "\$KEY" "\$REMOTE" "
-  tar -xzf '\$REMOTE_ARCHIVE' -C '\$REMOTE_DIR' && \
-  mv -f '\$REMOTE_DIR/\$SERVER_NAME.log' '\$REMOTE_DIR/\$SERVER_NAME.log' && \
-  rm -f '\$REMOTE_ARCHIVE'
+  # 解压（解压出的文件名固定：SERVER_NAME.log）
+  tar -xzf '\$REMOTE_ARCHIVE' -C '\$REMOTE_DIR';
+
+  # 删除压缩包（无论解压是否成功）
+  rm -f '\$REMOTE_ARCHIVE';
 "
 
 # -----------------------------
