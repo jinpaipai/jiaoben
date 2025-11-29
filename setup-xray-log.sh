@@ -31,7 +31,7 @@ mkdir -p "$DST_DIR"
 # 1️⃣ 排除 UDP 流量
 grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
 
-# 2️⃣ 排除指定域名
+# 2️⃣ 排除指定域名（包含你新增的几个）
 grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' \
     "$TMP_FILE".step1 > "$TMP_FILE".step2
 
@@ -42,16 +42,21 @@ grep -v -E 'tcp:.*:(80|22000)[[:space:]]' "$TMP_FILE".step2 > "$TMP_FILE".step3
 grep -v -E '127\.0\.0\.1:[0-9]+.*\[api -> api\]' \
     "$TMP_FILE".step3 > "$TMP_FILE".step4
 
-# 5️⃣ 最终输出到 step_filtered
-cp "$TMP_FILE".step4 "$TMP_FILE".step_filtered
+# 5️⃣ 过滤目标地址为纯 IP（新增）
+# 匹配 tcp:IPv4:端口
+grep -v -E 'tcp:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' \
+    "$TMP_FILE".step4 > "$TMP_FILE".step5
 
-# 6️⃣ 追加到日志文件
+# 6️⃣ 最终输出到 step_filtered
+cp "$TMP_FILE".step5 "$TMP_FILE".step_filtered
+
+# 7️⃣ 追加到日志文件
 cat "$TMP_FILE".step_filtered >> "$DST_LOG"
 
 # 清理临时文件
 rm -f "$TMP_FILE".step*
 
-# 7️⃣ 控制日志大小（200MB 自动清空）
+# 8️⃣ 控制日志大小（200MB 自动清空）
 MAX_SIZE=$((200 * 1024 * 1024))
 if [ -f "$DST_LOG" ]; then
     SIZE=$(stat -c%s "$DST_LOG")
