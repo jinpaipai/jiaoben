@@ -32,7 +32,7 @@ mkdir -p "$DST_DIR"
 grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
 
 # 2️⃣ 排除指定域名（包含你新增的几个）
-grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' \
+grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|clawcloudrun\.com|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' \
     "$TMP_FILE".step1 > "$TMP_FILE".step2
 
 # 3️⃣ 过滤目标端口 80 与 22000（不会误杀来源端口）
