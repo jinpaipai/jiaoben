@@ -1,3 +1,4 @@
+#    SUB_URL="你的订阅链接" sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/update_mihomo_sub.sh)"
 #!/usr/bin/env bash
 set -e
 
