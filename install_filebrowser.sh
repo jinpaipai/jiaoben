@@ -1,3 +1,4 @@
+#  bash <(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_filebrowser.sh)
 #!/bin/bash
 set -e
 
