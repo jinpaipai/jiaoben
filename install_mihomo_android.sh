@@ -1,3 +1,4 @@
+#    bash <(curl -L https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_mihomo_android.sh)
 #!/data/data/com.termux/files/usr/bin/bash
 # install_mihomo_android.sh - 安装/更新 Mihomo 并配置快捷脚本（Termux 安全目录版）
 
