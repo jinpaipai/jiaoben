@@ -1,3 +1,4 @@
+#    sudo bash -c "$(curl -sSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/update-hosts.sh)"
 #!/bin/bash
 # update-hosts.sh
 # Debian 12 更新 hosts 脚本（覆盖 /etc/hosts，无备份）
