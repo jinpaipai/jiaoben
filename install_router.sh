@@ -1,4 +1,6 @@
-#设置主路由wan，lan，dhcp等
+# 设置主路由wan，lan，dhcp等
+# Wan口DHCP    bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_router.sh)" dhcp
+# Wan口pppoe    bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_router.sh)" pppoe
 #!/bin/bash
 ### ------------------------------
 ### Router One-Key Install Script
