@@ -1,9 +1,50 @@
 #!/bin/bash
+# bash <(curl -sL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/setup-xray-upload.sh)
 # =======================================================
-# Xray 日志上传脚本自动安装器（稳定修正版）
+# Xray 日志上传脚本安装/卸载器（增强版）
 # =======================================================
 
 UPLOAD_SCRIPT="/usr/local/bin/xray-log-upload.sh"
+SERVICE_FILE="/etc/systemd/system/xray-log-upload.service"
+TIMER_FILE="/etc/systemd/system/xray-log-upload.timer"
+
+# =======================================================
+# 选择模式：安装 或 卸载
+# =======================================================
+echo "请选择操作："
+echo "1) 安装"
+echo "2) 卸载"
+read -rp "请输入数字 (1/2)： " ACTION
+
+# =======================================================
+# 卸载功能
+# =======================================================
+if [[ "$ACTION" == "2" ]]; then
+    echo "===> 正在停止 timer 和 service ..."
+    systemctl disable --now xray-log-upload.timer 2>/dev/null
+    systemctl disable --now xray-log-upload.service 2>/dev/null
+
+    echo "===> 删除上传脚本：$UPLOAD_SCRIPT"
+    rm -f "$UPLOAD_SCRIPT"
+
+    echo "===> 删除 systemd service：$SERVICE_FILE"
+    rm -f "$SERVICE_FILE"
+
+    echo "===> 删除 systemd timer：$TIMER_FILE"
+    rm -f "$TIMER_FILE"
+
+    echo "===> 重新加载 systemd ..."
+    systemctl daemon-reload
+
+    echo "==========================================================="
+    echo "✔ Xray 日志上传功能已完全卸载！"
+    echo "==========================================================="
+    exit 0
+fi
+
+# =======================================================
+# 以下为安装流程
+# =======================================================
 
 echo "===> 请输入远程服务器域名/IP（例如：www.baidu.com）："
 read -r REMOTE_ADDR
@@ -15,72 +56,41 @@ echo "===> 请输入本台服务器名称（例如：server01）："
 read -r SERVER_NAME
 
 # ===============================
-# 生成上传脚本（已修复）
+# 生成上传脚本
 # ===============================
 echo "===> 创建上传脚本：$UPLOAD_SCRIPT"
 
 cat > "$UPLOAD_SCRIPT" <<EOF
 #!/bin/bash
 
-# 服务器名称
 SERVER_NAME="$SERVER_NAME"
-
-# 本地日志
 SRC_LOG="/usr/local/xray_log/xray.log"
 
-# 远程服务器
 REMOTE="root@$REMOTE_ADDR"
 REMOTE_DIR="/srv/xray_logs"
 PORT=$PORT
 KEY="/root/.ssh/xray_sync"
 
-# 临时文件（固定文件名，避免混乱）
 TMP_COPY="/tmp/\${SERVER_NAME}.log"
 TMP_ARCHIVE="/tmp/\${SERVER_NAME}-\$(date +%Y%m%d%H%M%S).tar.gz"
 
 echo "===> 开始打包上传 Xray 日志 ..."
 
-# -----------------------------
-# 创建日志静态副本
-# -----------------------------
-echo "===> 复制日志为静态文件：\$TMP_COPY"
 cp "\$SRC_LOG" "\$TMP_COPY"
-
-# -----------------------------
-# 压缩静态副本（压缩包只包含一个文件）
-# -----------------------------
-echo "===> 压缩日志文件到 \$TMP_ARCHIVE ..."
 tar -czf "\$TMP_ARCHIVE" -C "/tmp" "\$(basename "\$TMP_COPY")"
 
-# -----------------------------
-# 上传压缩包
-# -----------------------------
-echo "===> 上传日志压缩包到远程服务器 ..."
 scp -P "\$PORT" -i "\$KEY" "\$TMP_ARCHIVE" "\$REMOTE:\$REMOTE_DIR/"
 
-# -----------------------------
-# 远程解压 & 覆盖为 SERVER_NAME.log
-# -----------------------------
 REMOTE_ARCHIVE="\$REMOTE_DIR/\$(basename "\$TMP_ARCHIVE")"
-
-echo "===> 在远程服务器解压日志并覆盖为 \$SERVER_NAME.log ..."
-
 ssh -p "\$PORT" -i "\$KEY" "\$REMOTE" "
-  # 解压（解压出的文件名固定：SERVER_NAME.log）
   tar -xzf '\$REMOTE_ARCHIVE' -C '\$REMOTE_DIR';
-
-  # 删除压缩包（无论解压是否成功）
   rm -f '\$REMOTE_ARCHIVE';
 "
 
-# -----------------------------
-# 本地清理
-# -----------------------------
 rm -f "\$TMP_COPY"
 rm -f "\$TMP_ARCHIVE"
 
 echo "===> 完成上传并解压日志！"
-
 EOF
 
 chmod +x "$UPLOAD_SCRIPT"
@@ -88,10 +98,7 @@ chmod +x "$UPLOAD_SCRIPT"
 # ===============================
 # 创建 systemd service
 # ===============================
-SERVICE_FILE="/etc/systemd/system/xray-log-upload.service"
-
 echo "===> 创建 systemd 服务：$SERVICE_FILE"
-
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
 Description=Upload Xray Log to Central Server
@@ -104,10 +111,7 @@ EOF
 # ===============================
 # 创建 systemd timer
 # ===============================
-TIMER_FILE="/etc/systemd/system/xray-log-upload.timer"
-
 echo "===> 创建 systemd 定时器：$TIMER_FILE"
-
 cat > "$TIMER_FILE" <<EOF
 [Unit]
 Description=Run Xray Log Upload Every Hour
