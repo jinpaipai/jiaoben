@@ -1,13 +1,69 @@
 #!/bin/bash
+# bash <(curl -sL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/setup-xray-log.sh)
 # ======================================================
-# 一键安装 xray systemd 日志提取过滤
+# 安装 / 卸载 Xray systemd 日志提取过滤 一键脚本
 # ======================================================
 
 SCRIPT_FILTER="/usr/local/bin/xray-log-filter.sh"
 SCRIPT_CLEAN="/usr/local/bin/xray-log-clean.sh"
 DST_DIR="/usr/local/xray_log"
 DST_LOG="$DST_DIR/xray.log"
-SRC_LOG="/usr/local/x-ui/access.log"
+
+SERVICE_FILTER="/etc/systemd/system/xray-log-filter.service"
+TIMER_FILTER="/etc/systemd/system/xray-log-filter.timer"
+SERVICE_CLEAN="/etc/systemd/system/xray-log-clean.service"
+TIMER_CLEAN="/etc/systemd/system/xray-log-clean.timer"
+
+# ======================================================
+# 选择操作
+# ======================================================
+echo "请选择操作："
+echo "1) 安装"
+echo "2) 卸载"
+read -rp "请输入数字 (1/2): " ACTION
+
+# ======================================================
+# 卸载功能
+# ======================================================
+if [[ "$ACTION" == "2" ]]; then
+    echo "===> 停止并禁用所有相关 systemd 服务与定时器..."
+
+    systemctl disable --now xray-log-filter.timer 2>/dev/null
+    systemctl disable --now xray-log-filter.service 2>/dev/null
+    systemctl disable --now xray-log-clean.timer 2>/dev/null
+    systemctl disable --now xray-log-clean.service 2>/dev/null
+
+    echo "===> 删除脚本..."
+    rm -f "$SCRIPT_FILTER"
+    rm -f "$SCRIPT_CLEAN"
+
+    echo "===> 删除 systemd 文件..."
+    rm -f "$SERVICE_FILTER"
+    rm -f "$TIMER_FILTER"
+    rm -f "$SERVICE_CLEAN"
+    rm -f "$TIMER_CLEAN"
+
+    echo "===> 重新加载 systemd..."
+    systemctl daemon-reload
+
+    # 询问是否删除日志目录
+    echo "是否删除日志目录 $DST_DIR ? (y/n)"
+    read -r RM_DIR
+    if [[ "$RM_DIR" == "y" ]]; then
+        rm -rf "$DST_DIR"
+        echo "已删除目录：$DST_DIR"
+    fi
+
+    echo "======================================================="
+    echo "✔ 卸载完成！所有 xray 日志过滤与清理功能已移除。"
+    echo "======================================================="
+    exit 0
+fi
+
+
+# ======================================================
+# 以下为安装流程
+# ======================================================
 
 echo "===> 创建 xray 日志目录..."
 mkdir -p "$DST_DIR"
@@ -31,32 +87,28 @@ mkdir -p "$DST_DIR"
 # 1️⃣ 排除 UDP 流量
 grep -v 'accepted udp:' "$SRC_LOG" > "$TMP_FILE".step1
 
-# 2️⃣ 排除指定域名（包含你新增的几个）
+# 2️⃣ 排除指定域名
 grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|clawcloudrun\.com|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' \
     "$TMP_FILE".step1 > "$TMP_FILE".step2
 
-# 3️⃣ 过滤目标端口 80 与 22000（不会误杀来源端口）
+# 3️⃣ 过滤目标端口 80 与 22000
 grep -v -E 'tcp:.*:(80|22000)[[:space:]]' "$TMP_FILE".step2 > "$TMP_FILE".step3
 
 # 4️⃣ 过滤本地 API 调用
 grep -v -E '127\.0\.0\.1:[0-9]+.*\[api -> api\]' \
     "$TMP_FILE".step3 > "$TMP_FILE".step4
 
-# 5️⃣ 过滤目标地址为纯 IP（新增）
-# 匹配 tcp:IPv4:端口
+# 5️⃣ 排除目标地址为纯 IP
 grep -v -E 'tcp:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' \
     "$TMP_FILE".step4 > "$TMP_FILE".step5
 
-# 6️⃣ 最终输出到 step_filtered
 cp "$TMP_FILE".step5 "$TMP_FILE".step_filtered
 
-# 7️⃣ 追加到日志文件
 cat "$TMP_FILE".step_filtered >> "$DST_LOG"
 
-# 清理临时文件
 rm -f "$TMP_FILE".step*
 
-# 8️⃣ 控制日志大小（200MB 自动清空）
+# 8️⃣ 控制日志大小
 MAX_SIZE=$((200 * 1024 * 1024))
 if [ -f "$DST_LOG" ]; then
     SIZE=$(stat -c%s "$DST_LOG")
@@ -69,9 +121,9 @@ EOF
 chmod +x "$SCRIPT_FILTER"
 
 # ======================================================
-# 2. 创建每 5 天清空日志的脚本
+# 2. 创建 5 天清空日志的脚本
 # ======================================================
-echo "===> 创建 5 天清理脚本：$SCRIPT_CLEAN"
+echo "===> 创建清理脚本：$SCRIPT_CLEAN"
 
 cat > "$SCRIPT_CLEAN" <<'EOF'
 #!/bin/bash
@@ -82,11 +134,11 @@ EOF
 chmod +x "$SCRIPT_CLEAN"
 
 # ======================================================
-# 3. 创建 systemd 服务与 timer（每分钟）
+# 3. 创建 systemd 服务/定时器
 # ======================================================
 echo "===> 创建 systemd: xray-log-filter.service & timer"
 
-cat > /etc/systemd/system/xray-log-filter.service <<EOF
+cat > "$SERVICE_FILTER" <<EOF
 [Unit]
 Description=Xray Log Filter Service
 Wants=xray-log-filter.timer
@@ -96,7 +148,7 @@ Type=oneshot
 ExecStart=$SCRIPT_FILTER
 EOF
 
-cat > /etc/systemd/system/xray-log-filter.timer <<EOF
+cat > "$TIMER_FILTER" <<EOF
 [Unit]
 Description=Run Xray Log Filter every minute
 
@@ -110,11 +162,11 @@ WantedBy=timers.target
 EOF
 
 # ======================================================
-# 4. 创建 systemd 服务与 timer（每 5 天）
+# 4. 每 5 天清理日志 timer
 # ======================================================
 echo "===> 创建 systemd: xray-log-clean.service & timer"
 
-cat > /etc/systemd/system/xray-log-clean.service <<EOF
+cat > "$SERVICE_CLEAN" <<EOF
 [Unit]
 Description=Xray Log Clean (5 Days)
 
@@ -123,9 +175,9 @@ Type=oneshot
 ExecStart=$SCRIPT_CLEAN
 EOF
 
-cat > /etc/systemd/system/xray-log-clean.timer <<EOF
+cat > "$TIMER_CLEAN" <<EOF
 [Unit]
-Description=Run Xray Log Clean every 5 天之前
+Description=Run Xray Log Clean every 5 days
 
 [Timer]
 OnUnitActiveSec=5d
@@ -145,14 +197,11 @@ systemctl daemon-reload
 echo "===> 启动并启用过滤定时器..."
 systemctl enable --now xray-log-filter.timer
 
-echo "===> 手动启动一次 clean 服务以激活 timer..."
+echo "===> 手动触发 clean 一次以激活 timer..."
 systemctl start xray-log-clean.service
 
-echo "===> 启动并启用清理定时器..."
+echo "===> 启用清理定时器..."
 systemctl enable --now xray-log-clean.timer
-
-echo "===> 查看生效的定时器..."
-systemctl list-timers | grep xray
 
 echo "======================================================="
 echo "安装完成！"
