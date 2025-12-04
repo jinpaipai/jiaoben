@@ -1,3 +1,4 @@
+#    wget -qO- https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_mihomo.sh | sudo bash
 #!/usr/bin/env bash
 set -e
 
