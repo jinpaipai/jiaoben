@@ -1,3 +1,4 @@
+#    sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_qbittorrent.sh)"
 #!/bin/bash
 
 # 一键安装 qbittorrent-nox 并启动服务，同时保留已有配置文件
