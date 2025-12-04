@@ -1,3 +1,4 @@
+#    bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/restore.sh)"
 #!/bin/bash
 
 BACKUP_DIR="/root/backup"
