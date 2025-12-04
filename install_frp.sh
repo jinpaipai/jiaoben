@@ -1,3 +1,5 @@
+# Frps  bash <(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_frp.sh) server
+# Frpc  bash <(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_frp.sh) client
 #!/bin/bash
 # 一键安装或升级最新版 frp (client/server) 到 Debian 12
 # 原有配置文件不覆盖，支持 systemd 服务开机自启
