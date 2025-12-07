@@ -42,6 +42,7 @@ FILES_TO_BACKUP=(
     "/opt/nezha"
     "/opt/1panel"
     "/usr/local/sync"
+    "/opt/pansou/"
     "/usr/local/python"
     "/usr/local/bin/lang"
     "/usr/local/bin/1panel-agent"
