@@ -14,7 +14,7 @@ TIMER_FILTER="/etc/systemd/system/sui-log-filter.timer"
 SERVICE_CLEAN="/etc/systemd/system/sui-log-clean.service"
 TIMER_CLEAN="/etc/systemd/system/sui-log-clean.timer"
 
-# SUI 日志来源（你要求修正的路径）
+# SUI 日志来源
 SUI_LOG="/usr/local/s-ui/log/sui.log"
 
 # ======================================================
@@ -30,7 +30,6 @@ read -rp "请输入数字 (1/2): " ACTION
 # ======================================================
 if [[ "$ACTION" == "2" ]]; then
     echo "===> 停止并禁用 systemd 服务与定时器..."
-
     systemctl disable --now sui-log-filter.timer 2>/dev/null
     systemctl disable --now sui-log-filter.service 2>/dev/null
     systemctl disable --now sui-log-clean.timer 2>/dev/null
@@ -58,7 +57,6 @@ if [[ "$ACTION" == "2" ]]; then
     exit 0
 fi
 
-
 # ======================================================
 # 以下为安装流程
 # ======================================================
@@ -71,57 +69,40 @@ mkdir -p "$DST_DIR"
 # ======================================================
 echo "===> 创建过滤脚本：$SCRIPT_FILTER"
 
-cat > "$SCRIPT_FILTER" <<EOF
+cat > "$SCRIPT_FILTER" <<'EOF'
 #!/bin/bash
 
-SRC_LOG="$SUI_LOG"
+SRC_LOG="/usr/local/s-ui/log/sui.log"
 DST_DIR="/usr/local/sui_log"
 DST_LOG="$DST_DIR/sui.log"
 
 TMP=$(mktemp /tmp/sui_tmp.XXXXXX)
-
 mkdir -p "$DST_DIR"
 
-# 0️⃣ 去重漏洞 — 去重完全相同行，防止 spam
+BLACKLIST_DOMAINS='www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|clawcloudrun\.com|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com'
+
+# 0️⃣ 去重
 awk '!seen[$0]++' "$SRC_LOG" > "$TMP".step0
 
-# 1️⃣ 过滤 Cloudflare / Google routine（但保留真实 outbound）
-grep -v -E 'cloudflare|gstatic|google|akamai|apple' \
-    "$TMP".step0 > "$TMP".step1
+# 1️⃣ 删除所有入站日志
+grep 'outbound connection to' "$TMP".step0 > "$TMP".step1
 
-# 2️⃣ netlink 噪音
-grep -v -E 'netlink.*(invalid|error|ignored|nlmsg)' \
-    "$TMP".step1 > "$TMP".step2
+# 2️⃣ 过滤黑名单域名
+grep -v -E "$BLACKLIST_DOMAINS" "$TMP".step1 > "$TMP".step2
 
-# 3️⃣ 高频 DNS 噪音（不影响 inbound/outbound）
-grep -v -E 'query\[A\]|query\[AAAA\]|DNS lookup|DoH|resolve' \
-    "$TMP".step2 > "$TMP".step3
+# 3️⃣ 过滤目标端口 80 和 22000
+grep -vE ':(80|22000)\b' "$TMP".step2 > "$TMP".step3
 
-# 4️⃣ inbound 噪音（仅过滤 spam，不过滤真实连接）
-# 保留：accepted tcp / sniff / inbound tcp
-grep -v -E 'inbound.*(flood|repeated|too many)' \
-    "$TMP".step3 > "$TMP".step4
+# 4️⃣ 屏蔽无意义纯 IP 目标
+grep -v -E 'target=.*([0-9]{1,3}\.){3}[0-9]{1,3}(:53|:443)?' "$TMP".step3 > "$TMP".step4
 
-# 5️⃣ 过滤端口 80 / 22000（你要求的）
-grep -v -E ':(80|22000)\b' \
-    "$TMP".step4 > "$TMP".step5
-
-# 6️⃣ 排除你给出的黑名单域名
-grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|clawcloudrun\.com|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' \
-    "$TMP".step5 > "$TMP".step6
-
-# 7️⃣ 屏蔽无意义 "纯 IP 目标"（真实 outbound 不会被过滤）
-grep -v -E 'target=.*([0-9]{1,3}\.){3}[0-9]{1,3}(:53|:443)?' \
-    "$TMP".step6 > "$TMP".step7
-
-# 8️⃣ 写入最终日志（保留 inbound/outbound）
-cat "$TMP".step7 >> "$DST_LOG"
+# 5️⃣ 写入最终日志
+cat "$TMP".step4 >> "$DST_LOG"
 
 rm -f "$TMP".step*
 EOF
 
 chmod +x "$SCRIPT_FILTER"
-
 
 # ======================================================
 # 2. 清理日志脚本
@@ -135,7 +116,6 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') - 自动5天清理日志" > "$DST_LOG"
 EOF
 
 chmod +x "$SCRIPT_CLEAN"
-
 
 # ======================================================
 # 3. systemd 服务 / timer
