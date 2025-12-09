@@ -1,4 +1,5 @@
 #!/bin/bash
+# bash <(curl -sL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/setup-sui-log.sh)
 # ======================================================
 # 安装 / 卸载 SUI systemd 日志提取过滤 一键脚本
 # ======================================================
