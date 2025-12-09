@@ -78,38 +78,46 @@ SRC_LOG="$SUI_LOG"
 DST_DIR="/usr/local/sui_log"
 DST_LOG="$DST_DIR/sui.log"
 
-TMP=\$(mktemp /tmp/sui_tmp.XXXXXX)
+TMP=$(mktemp /tmp/sui_tmp.XXXXXX)
 
-mkdir -p "\$DST_DIR"
+mkdir -p "$DST_DIR"
 
-# 0️⃣ 去重同一条重复日志
-awk '!seen[\$0]++' "\$SRC_LOG" > "\$TMP".step0
+# 0️⃣ 去重漏洞 — 去重完全相同行，防止 spam
+awk '!seen[$0]++' "$SRC_LOG" > "$TMP".step0
 
-# 1️⃣ 过滤 Cloudflare / Google routine
-grep -v -E 'cloudflare|gstatic|google|akamai|apple' "\$TMP".step0 > "\$TMP".step1
+# 1️⃣ 过滤 Cloudflare / Google routine（但保留真实 outbound）
+grep -v -E 'cloudflare|gstatic|google|akamai|apple' \
+    "$TMP".step0 > "$TMP".step1
 
 # 2️⃣ netlink 噪音
-grep -v 'netlink' "\$TMP".step1 > "\$TMP".step2
+grep -v -E 'netlink.*(invalid|error|ignored|nlmsg)' \
+    "$TMP".step1 > "$TMP".step2
 
-# 3️⃣ DNS 查询噪音
-grep -v -E 'query\[A\]|query\[AAAA\]|DNS' "\$TMP".step2 > "\$TMP".step3
+# 3️⃣ 高频 DNS 噪音（不影响 inbound/outbound）
+grep -v -E 'query\[A\]|query\[AAAA\]|DNS lookup|DoH|resolve' \
+    "$TMP".step2 > "$TMP".step3
 
-# 4️⃣ inbound 噪音
-grep -v -E 'inbound connection|accepted tcp:' "\$TMP".step3 > "\$TMP".step4
+# 4️⃣ inbound 噪音（仅过滤 spam，不过滤真实连接）
+# 保留：accepted tcp / sniff / inbound tcp
+grep -v -E 'inbound.*(flood|repeated|too many)' \
+    "$TMP".step3 > "$TMP".step4
 
-# 5️⃣ 过滤端口 80 / 22000
-grep -v -E 'tcp:.*:(80|22000)[[:space:]]' "\$TMP".step4 > "\$TMP".step5
+# 5️⃣ 过滤端口 80 / 22000（你要求的）
+grep -v -E ':(80|22000)\b' \
+    "$TMP".step4 > "$TMP".step5
 
-# 6️⃣ 排除指定域名
-grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|clawcloudrun\.com|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' "\$TMP".step5 > "\$TMP".step6
+# 6️⃣ 排除你给出的黑名单域名
+grep -v -E 'www\.gstatic\.com|www\.apple\.com|accounts\.google\.com|wpad\.mshome\.net|stream-production\.avcdn\.net|inputsuggestions\.msdxcdn\.microsoft\.com|jinpaipai\.top|jinpaipai\.fun|paipaijin\.dpdns\.org|jinpaipai\.qzz\.io|xxxyun\.top|jueduibupao\.top|6bnw\.top|sssyun\.xyz|clawcloudrun\.com|captive\.apple\.com|dns\.google|cloudflare-dns\.com|dns\.adguard\.com|doh\.opendns\.com|www\.mathworks\.com|best\.cdn\.sqeven\.cn|bestcf\.top|idsduf\.com|whtjdasha\.com' \
+    "$TMP".step5 > "$TMP".step6
 
-# 7️⃣ 排除只有 IP 的目标连接
-grep -v -E 'tcp:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' "\$TMP".step6 > "\$TMP".step7
+# 7️⃣ 屏蔽无意义 "纯 IP 目标"（真实 outbound 不会被过滤）
+grep -v -E 'target=.*([0-9]{1,3}\.){3}[0-9]{1,3}(:53|:443)?' \
+    "$TMP".step6 > "$TMP".step7
 
-# 8️⃣ 写入
-cat "\$TMP".step7 >> "\$DST_LOG"
+# 8️⃣ 写入最终日志（保留 inbound/outbound）
+cat "$TMP".step7 >> "$DST_LOG"
 
-rm -f "\$TMP".step*
+rm -f "$TMP".step*
 EOF
 
 chmod +x "$SCRIPT_FILTER"
