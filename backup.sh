@@ -1,4 +1,6 @@
 #!/bin/bash
+#bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/backup.sh)"
+
 set -e
 
 echo "=== Installing backup script & systemd timer ==="
