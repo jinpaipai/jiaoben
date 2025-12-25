@@ -1,4 +1,3 @@
-#    bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/backup.sh)"
 #!/bin/bash
 
 echo "=== Installing backup script & systemd timer ==="
@@ -15,6 +14,17 @@ cat >/usr/local/bin/backup.sh <<'EOF'
 BACKUP_DIR="/root/backup"
 mkdir -p "$BACKUP_DIR"
 LOG_FILE="$BACKUP_DIR/backup.log"
+
+# ----------------------------
+# Limit log size (10MB)
+# ----------------------------
+MAX_LOG_SIZE=$((10 * 1024 * 1024))  # 10MB
+if [ -f "$LOG_FILE" ]; then
+    LOG_SIZE=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
+    if [ "$LOG_SIZE" -ge "$MAX_LOG_SIZE" ]; then
+        echo "$(date) Log exceeded 10MB, truncating..." > "$LOG_FILE"
+    fi
+fi
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
@@ -174,8 +184,6 @@ EOF
 
 chmod +x /usr/local/bin/backup.sh
 
-
-
 # ----------------------------
 # 2. Write backup.service
 # ----------------------------
@@ -187,8 +195,6 @@ Description=Run system backup script
 Type=oneshot
 ExecStart=/usr/local/bin/backup.sh
 EOF
-
-
 
 # ----------------------------
 # 3. Write backup.timer
@@ -204,8 +210,6 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-
-
 
 # ----------------------------
 # 4. Enable systemd
