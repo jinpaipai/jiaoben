@@ -69,7 +69,7 @@ FILES_TO_BACKUP=(
     "/etc/x-ui/"
     "/usr/local/h-ui"
     "/etc/mihomo"
-    "/usr-local/bin/mihomo"
+    "/usr/local/bin/mihomo"
     "/etc/sysctl.conf"
     "/root/.cloudflared"
     "/usr/local/bin/cloudflared"
