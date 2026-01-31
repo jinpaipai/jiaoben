@@ -29,6 +29,21 @@ if ! command -v gpg >/dev/null 2>&1; then
 fi
 
 # ----------------------------
+# Password storage for automated encryption
+# ----------------------------
+PWD_FILE="$BACKUP_DIR/.backup_gpg_pass"
+if [ ! -f "$PWD_FILE" ]; then
+    # First run, ask user for password
+    echo -n "Enter encryption password (it will be saved locally for automation): "
+    read -s BACKUP_PWD
+    echo
+    echo "$BACKUP_PWD" > "$PWD_FILE"
+    chmod 600 "$PWD_FILE"
+else
+    BACKUP_PWD=$(cat "$PWD_FILE")
+fi
+
+# ----------------------------
 # Limit log size (10MB)
 # ----------------------------
 MAX_LOG_SIZE=$((10 * 1024 * 1024))  # 10MB
@@ -170,10 +185,10 @@ if [ $? -eq 0 ]; then
     echo "Backup verified successfully" | tee -a "$LOG_FILE"
 
     # ----------------------------
-    # Encrypt backup
+    # Encrypt backup automatically using saved password
     # ----------------------------
-    echo "Encrypting backup (enter password)..." | tee -a "$LOG_FILE"
-    gpg --symmetric --cipher-algo AES256 "$BACKUP_FILE"
+    echo "Encrypting backup..." | tee -a "$LOG_FILE"
+    gpg --batch --yes --passphrase "$BACKUP_PWD" --symmetric --cipher-algo AES256 "$BACKUP_FILE"
     if [ $? -ne 0 ]; then
         echo "Encryption failed" | tee -a "$LOG_FILE"
         exit 1
