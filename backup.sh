@@ -153,10 +153,12 @@ if [ \${#EXISTING_FILES[@]} -eq 0 ]; then
 fi
 
 echo "Backing up files..." | tee -a "\$LOG_FILE"
-tar -czvf "\$BACKUP_FILE" "\${EXCLUDE_PARAMS[@]}" "\${EXISTING_FILES[@]}" >> "\$LOG_FILE" 2>&1
+# ----------------------------
+# Add --ignore-failed-read to avoid tar exit on missing files
+# ----------------------------
+tar --ignore-failed-read -czvf "\$BACKUP_FILE" "\${EXCLUDE_PARAMS[@]}" "\${EXISTING_FILES[@]}" >> "\$LOG_FILE" 2>&1
 if [ \$? -ne 0 ]; then
-    echo "Backup failed." | tee -a "\$LOG_FILE"
-    exit 1
+    echo "Backup failed (tar errors ignored, continuing with encryption)" | tee -a "\$LOG_FILE"
 fi
 
 # ----------------------------
