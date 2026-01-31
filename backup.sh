@@ -16,6 +16,19 @@ mkdir -p "$BACKUP_DIR"
 LOG_FILE="$BACKUP_DIR/backup.log"
 
 # ----------------------------
+# Check GPG
+# ----------------------------
+if ! command -v gpg >/dev/null 2>&1; then
+    echo "GPG not found, installing..." | tee -a "$LOG_FILE"
+    if command -v apt >/dev/null 2>&1; then
+        apt update && apt install -y gnupg
+    else
+        echo "Please install gnupg manually" | tee -a "$LOG_FILE"
+        exit 1
+    fi
+fi
+
+# ----------------------------
 # Limit log size (10MB)
 # ----------------------------
 MAX_LOG_SIZE=$((10 * 1024 * 1024))  # 10MB
@@ -28,6 +41,7 @@ fi
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
+ENCRYPTED_FILE="$BACKUP_FILE.gpg"
 
 # ----------------------------
 # Specify files and directories to backup
@@ -154,6 +168,19 @@ echo "Verifying backup integrity..." | tee -a "$LOG_FILE"
 tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "Backup verified successfully" | tee -a "$LOG_FILE"
+
+    # ----------------------------
+    # Encrypt backup
+    # ----------------------------
+    echo "Encrypting backup (enter password)..." | tee -a "$LOG_FILE"
+    gpg --symmetric --cipher-algo AES256 "$BACKUP_FILE"
+    if [ $? -ne 0 ]; then
+        echo "Encryption failed" | tee -a "$LOG_FILE"
+        exit 1
+    fi
+    rm -f "$BACKUP_FILE"
+    BACKUP_FILE="$ENCRYPTED_FILE"
+
 else
     echo "Backup verification failed" | tee -a "$LOG_FILE"
     exit 1
@@ -166,13 +193,13 @@ BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
 echo "Backup completed: $BACKUP_FILE, size: $BACKUP_SIZE" | tee -a "$LOG_FILE"
 
 # ----------------------------
-# Rotation: keep last 3 backups
+# Rotation: keep last 3 backups (encrypted)
 # ----------------------------
 MAX_BACKUPS=3
-BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | wc -l)
+BACKUP_COUNT=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
 
 if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
-    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$(($MAX_BACKUPS + 1)))
+    OLDEST_BACKUPS=$(ls -1t "$BACKUP_DIR"/backup_*.tar.gz.gpg | tail -n +$(($MAX_BACKUPS + 1)))
     echo "Deleting old backups:" | tee -a "$LOG_FILE"
     echo "$OLDEST_BACKUPS" | tee -a "$LOG_FILE"
     rm -f $OLDEST_BACKUPS
