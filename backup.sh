@@ -88,6 +88,7 @@ FILES_TO_BACKUP=(
     "/usr/local/h-ui"
     "/etc/mihomo"
     "/usr/local/bin/mihomo"
+    "/opt/rustdesk"
     "/etc/sysctl.conf"
     "/root/.cloudflared"
     "/usr/local/bin/cloudflared"
