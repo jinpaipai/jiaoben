@@ -71,6 +71,7 @@ FILES_TO_BACKUP=(
     "/opt/1panel"
     "/usr/local/sync"
     "/opt/pansou/"
+    "/root/nodepassdash"
     "/usr/local/python"
     "/usr/local/bin/lang"
     "/usr/local/bin/1panel-agent"
