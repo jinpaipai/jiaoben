@@ -82,6 +82,7 @@ FILES_TO_BACKUP=(
     "/usr/bin/1pctl"
     "/root/zhengshu/"
     "/etc/localtime"
+    "/data/ms365"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
     "/etc/x-ui/"
