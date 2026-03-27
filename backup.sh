@@ -186,7 +186,7 @@ BACKUP_FILE="\$ENCRYPTED_FILE"
 # ----------------------------
 # Rotation: keep last 3 encrypted backups
 # ----------------------------
-MAX_BACKUPS=3
+MAX_BACKUPS=2
 BACKUP_COUNT=\$(ls -1t "\$BACKUP_DIR"/backup_*.tar.gz.gpg 2>/dev/null | wc -l)
 if [ "\$BACKUP_COUNT" -gt "\$MAX_BACKUPS" ]; then
     OLDEST_BACKUPS=\$(ls -1t "\$BACKUP_DIR"/backup_*.tar.gz.gpg | tail -n +\$((MAX_BACKUPS + 1)))
