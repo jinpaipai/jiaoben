@@ -66,6 +66,7 @@ FILES_TO_BACKUP=(
     "/opt/vault-data"
     "/opt/srs"
     "/usr/bin/filebrowser"
+    "/usr/local/zhengshu"
     "/etc/filebrowser.db"
     "/opt/nezha"
     "/opt/1panel"
