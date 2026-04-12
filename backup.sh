@@ -62,6 +62,7 @@ FILES_TO_BACKUP=(
     "/usr/local/alist"
     "/usr/local/frp"
     "/root/nodepassdash"
+    "/etc/iptables"
     "/etc/nodepass"
     "/root/ql"
     "/etc/sub-store"
