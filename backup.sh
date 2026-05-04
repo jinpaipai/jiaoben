@@ -64,6 +64,7 @@ FILES_TO_BACKUP=(
     "/usr/local/frp"
     "/root/nodepassdash"
     "/etc/iptables"
+    "/usr/bin/suoha"
     "/etc/nodepass"
     "/root/ql"
     "/etc/sub-store"
