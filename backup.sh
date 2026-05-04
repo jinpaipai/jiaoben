@@ -69,6 +69,7 @@ FILES_TO_BACKUP=(
     "/etc/sub-store"
     "/opt/vault-data"
     "/opt/srs"
+    "/opt/suoha"
     "/usr/bin/filebrowser"
     "/usr/local/zhengshu"
     "/etc/filebrowser.db"
