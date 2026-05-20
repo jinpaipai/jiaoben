@@ -66,6 +66,7 @@ FILES_TO_BACKUP=(
     "/etc/iptables"
     "/usr/bin/suoha"
     "/etc/nodepass"
+    "/root/Xboard"
     "/root/ql"
     "/etc/sub-store"
     "/opt/vault-data"
