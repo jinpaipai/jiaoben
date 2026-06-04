@@ -90,7 +90,7 @@ FILES_TO_BACKUP=(
     "/usr/bin/1pctl"
     "/root/zhengshu"
     "/etc/localtime"
-    "/data/ms365"
+    "/opt/ms365"
     "/opt/teamspeak"
     "/usr/local/x-ui"
     "/usr/bin/x-ui"
