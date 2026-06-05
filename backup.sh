@@ -58,6 +58,7 @@ FILES_TO_BACKUP=(
     "/usr/local/s-ui"
     "/etc/gost"
     "/opt/komari"
+    "/opt/komari-agent"
     "/usr/bin/s-ui"
     "/root/AdGuardHome"
     "/usr/local/alist"
