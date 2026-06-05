@@ -58,7 +58,6 @@ FILES_TO_BACKUP=(
     "/usr/local/s-ui"
     "/etc/gost"
     "/opt/komari"
-    "/opt/komari-agent"
     "/usr/bin/s-ui"
     "/root/AdGuardHome"
     "/usr/local/alist"
@@ -130,6 +129,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/nodepass.service"
     "/etc/systemd/system/AdGuardHome.service"
     "/etc/systemd/system/aria2.service"
+    "/etc/systemd/system/komari-agent.service"
 )
 
 EXCLUDES=(
