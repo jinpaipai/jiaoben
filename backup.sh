@@ -83,6 +83,7 @@ FILES_TO_BACKUP=(
     "/opt/pansou/"
     "/usr/local/python"
     "/usr/local/bin/lang"
+    "/opt/syncthing-relay/"
     "/usr/local/bin/1panel-agent"
     "/usr/local/bin/1panel-core"
     "/usr/local/bin/1pctl"
