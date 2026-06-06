@@ -70,7 +70,7 @@ FILES_TO_BACKUP=(
     "/etc/nodepass"
     "/root/Xboard"
     "/root/ql"
-    "/etc/sub-store"
+    "/opt/sub-store"
     "/opt/vault-data"
     "/opt/srs"
     "/opt/suoha"
