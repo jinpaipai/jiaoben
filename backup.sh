@@ -54,6 +54,7 @@ FILES_TO_BACKUP=(
     "/alist"
     "/root/.ssh"
     "/etc/aria2"
+    "/opt/github"
     "/usr/bin/gost"
     "/usr/local/s-ui"
     "/etc/gost"
