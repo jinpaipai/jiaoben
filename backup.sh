@@ -61,6 +61,7 @@ FILES_TO_BACKUP=(
     "/usr/bin/s-ui"
     "/root/AdGuardHome"
     "/usr/local/alist"
+    "/usr/local/openlist"
     "/usr/local/frp"
     "/root/nodepassdash"
     "/etc/iptables"
