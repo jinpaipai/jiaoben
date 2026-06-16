@@ -130,6 +130,7 @@ if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
         echo "创建 mihomo_subupdate.sh 脚本..."
         cat > /usr/local/bin/mihomo_subupdate.sh <<'EOF'
 #!/bin/bash
+
 CONFIG_DIR="/etc/mihomo"
 CONFIG_FILE="$CONFIG_DIR/config.yaml"
 SUB_URL="__SUB_URL__"
@@ -138,25 +139,60 @@ LOG_FILE="/var/log/mihomo_update.log"
 mkdir -p "$CONFIG_DIR"
 touch "$LOG_FILE"
 
-curl -sSL "$SUB_URL" -o "$CONFIG_FILE".tmp
-if [ $? -ne 0 ] || [ ! -s "$CONFIG_FILE".tmp ]; then
-    echo "$(date '+%F %T') 配置更新失败（下载错误或文件为空）" | tee -a "$LOG_FILE"
-    rm -f "$CONFIG_FILE".tmp
+TMP_FILE="${CONFIG_FILE}.tmp"
+
+# 下载配置
+if ! curl -fsSL --connect-timeout 10 --max-time 60 \
+    "$SUB_URL" -o "$TMP_FILE"; then
+    echo "$(date '+%F %T') 配置下载失败" | tee -a "$LOG_FILE"
+    rm -f "$TMP_FILE"
     exit 1
 fi
 
-if ! cmp -s "$CONFIG_FILE.tmp" "$CONFIG_FILE"; then
-    mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-    if systemctl reload mihomo 2>/dev/null; then
-        echo "$(date '+%F %T') 配置有变化，已 reload 服务" | tee -a "$LOG_FILE"
-    else
-        systemctl restart mihomo
-        echo "$(date '+%F %T') 配置有变化，reload 不支持，已 restart 服务" | tee -a "$LOG_FILE"
-    fi
-else
-    rm -f "$CONFIG_FILE".tmp
-    echo "$(date '+%F %T') 配置无变化，无需 reload" | tee -a "$LOG_FILE"
+# 检查文件是否为空
+if [ ! -s "$TMP_FILE" ]; then
+    echo "$(date '+%F %T') 下载的配置为空" | tee -a "$LOG_FILE"
+    rm -f "$TMP_FILE"
+    exit 1
 fi
+
+# 检查是否是 HTML 错误页面
+if grep -qiE '<html|<!DOCTYPE|<head|<body|Error code|Cloudflare|502 Bad Gateway|503 Service Unavailable|504 Gateway|522|404 Not Found' "$TMP_FILE"; then
+    echo "$(date '+%F %T') 下载内容不是有效配置（疑似错误页面）" | tee -a "$LOG_FILE"
+    rm -f "$TMP_FILE"
+    exit 1
+fi
+
+# 使用 mihomo 校验配置
+if ! /usr/local/bin/mihomo -t -d "$CONFIG_DIR" -f "$TMP_FILE" >/dev/null 2>&1; then
+    echo "$(date '+%F %T') 配置校验失败，未更新" | tee -a "$LOG_FILE"
+    rm -f "$TMP_FILE"
+    exit 1
+fi
+
+# 判断是否有变化
+if cmp -s "$TMP_FILE" "$CONFIG_FILE"; then
+    rm -f "$TMP_FILE"
+    echo "$(date '+%F %T') 配置无变化" | tee -a "$LOG_FILE"
+    exit 0
+fi
+
+# 替换配置
+mv -f "$TMP_FILE" "$CONFIG_FILE"
+
+# 优先 reload，不支持则 restart
+if systemctl reload mihomo >/dev/null 2>&1; then
+    echo "$(date '+%F %T') 配置已更新，reload 成功" | tee -a "$LOG_FILE"
+else
+    if systemctl restart mihomo; then
+        echo "$(date '+%F %T') 配置已更新，restart 成功" | tee -a "$LOG_FILE"
+    else
+        echo "$(date '+%F %T') 配置已更新，但重启失败" | tee -a "$LOG_FILE"
+        exit 1
+    fi
+fi
+
+exit 0
 EOF
 
         # 替换订阅链接
