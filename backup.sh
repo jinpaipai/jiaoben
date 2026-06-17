@@ -60,6 +60,7 @@ FILES_TO_BACKUP=(
     "/usr/local/s-ui"
     "/etc/gost"
     "/opt/komari"
+    "/opt/2fauth"
     "/usr/bin/s-ui"
     "/root/AdGuardHome"
     "/usr/local/alist"
