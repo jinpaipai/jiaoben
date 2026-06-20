@@ -25,7 +25,7 @@ fi
 # 加国内镜像前缀
 MIRRORED_DOWNLOADS=""
 while read -r url; do
-    MIRRORED_DOWNLOADS+=$(echo "https://github.jinpaipai.fun/$url")$'\n'
+    MIRRORED_DOWNLOADS+=$(echo "https://github.jinpaipai.fun:1443/$url")$'\n'
 done <<< "$DOWNLOADS"
 
 # 存入数组
