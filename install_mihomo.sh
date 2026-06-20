@@ -120,9 +120,9 @@ systemctl status mihomo --no-pager
 # =======================
 # 订阅更新功能
 # =======================
-read -rp "是否配置订阅更新功能？(y/N): " ENABLE_SUB
+read -rp "是否配置订阅更新功能？(y/N): " ENABLE_SUB </dev/tty
 if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
-    read -rp "请输入你的订阅链接: " SUB_URL
+    read -rp "请输入你的订阅链接: " SUB_URL </dev/tty
 
     if [ -z "$SUB_URL" ]; then
         echo "❌ 订阅链接为空，跳过配置订阅更新"
