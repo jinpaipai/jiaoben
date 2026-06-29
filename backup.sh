@@ -67,6 +67,7 @@ FILES_TO_BACKUP=(
     "/usr/local/openlist"
     "/usr/local/frp"
     "/root/nodepassdash"
+    "/usr/local/openresty"
     "/etc/iptables"
     "/usr/bin/suoha"
     "/etc/nodepass"
