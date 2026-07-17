@@ -56,6 +56,7 @@ FILES_TO_BACKUP=(
     "/etc/aria2"
     "/opt/github"
     "/opt/ql"
+    "/opt/frp"
     "/usr/bin/gost"
     "/usr/local/s-ui"
     "/etc/gost"
