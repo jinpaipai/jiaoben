@@ -72,6 +72,7 @@ FILES_TO_BACKUP=(
     "/etc/iptables"
     "/usr/bin/suoha"
     "/etc/nodepass"
+    "/opt/Rewards/"
     "/root/Xboard"
     "/opt/sub-store"
     "/opt/vault-data"
