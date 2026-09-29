@@ -79,6 +79,8 @@ FILES_TO_BACKUP=(
     "/opt/srs"
     "/opt/suoha"
     "/usr/bin/filebrowser"
+    "/opt/aimilivpn"
+    "/usr/bin/ml"
     "/usr/local/zhengshu"
     "/etc/filebrowser.db"
     "/opt/nezha"
@@ -137,6 +139,7 @@ FILES_TO_BACKUP=(
     "/etc/systemd/system/AdGuardHome.service"
     "/etc/systemd/system/aria2.service"
     "/etc/systemd/system/komari-agent.service"
+    "/lib/systemd/system/aimilivpn.service"
 )
 
 EXCLUDES=(
