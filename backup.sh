@@ -62,6 +62,7 @@ FILES_TO_BACKUP=(
     "/etc/gost"
     "/opt/komari"
     "/opt/2fauth"
+    "/etc/wireguard"
     "/opt/aimilivpn"
     "/usr/bin/s-ui"
     "/root/AdGuardHome"
