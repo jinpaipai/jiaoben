@@ -79,6 +79,7 @@ FILES_TO_BACKUP=(
     "/opt/sub-store"
     "/opt/vault-data"
     "/opt/srs"
+    "/opt/rewards-dashboard"
     "/opt/suoha"
     "/usr/bin/filebrowser"
     "/opt/aimilivpn"
