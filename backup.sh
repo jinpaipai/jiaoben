@@ -67,6 +67,7 @@ FILES_TO_BACKUP=(
     "/usr/bin/s-ui"
     "/root/AdGuardHome"
     "/usr/local/alist"
+    "/opt/Komari-Panel"
     "/usr/local/openlist"
     "/usr/local/frp"
     "/root/nodepassdash"
