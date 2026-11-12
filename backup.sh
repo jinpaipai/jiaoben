@@ -58,6 +58,7 @@ FILES_TO_BACKUP=(
     "/opt/ql"
     "/opt/ip_sentinel"
     "/opt/ip_sentinel_master"
+    "/root/.local/state/syncthing"
     "/opt/frp"
     "/usr/bin/gost"
     "/usr/local/s-ui"
