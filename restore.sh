@@ -1,4 +1,4 @@
-#    bash -c "$(curl -fsSL https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/restore.sh)"
+
 #!/bin/bash
 
 BACKUP_DIR="/root/backup"
@@ -86,13 +86,19 @@ if [ $? -eq 0 ]; then
         rm -f "$DECRYPTED_FILE"
     fi
 
+    echo "🔄 重新加载 systemd 配置..."
+    systemctl daemon-reload
+
     # ----------------------------
     # 自动开启开机自启并重启服务
     # ----------------------------
     SERVICES=(
+        "s-ui.service"
         "nezha-dashboard.service"
         "nezha-agent.service"
+        "gost.service"
         "cloudflared.service"
+        "komari.service"
         "x-ui.service"
         "frpc.service"
         "frps.service"
@@ -103,11 +109,14 @@ if [ $? -eq 0 ]; then
         "1panel-agent.service"
         "filebrowser.service"
         "mihomo.service"
+        "mihomo-update.service"
         "nodepass.service"
         "AdGuardHome.service"
-        "s-ui.service"
         "aria2.service"
-        "cron.service"
+        "komari-agent.service"
+        "aimilivpn.service"
+        "ip-sentinel-agent-daemon.service"
+        "ip-sentinel-master.service"
     )
 
     for SERVICE in "${SERVICES[@]}"; do
@@ -121,20 +130,29 @@ if [ $? -eq 0 ]; then
     done
 
     # ----------------------------
+    # 启用并立即启动定时器
+    # ----------------------------
+    TIMERS=(
+        "mihomo-update.timer"
+        "ip-sentinel-runner.timer"
+        "ip-sentinel-updater.timer"
+        "ip-sentinel-report.timer"
+    )
+
+    for TIMER in "${TIMERS[@]}"; do
+        if [ -f "/etc/systemd/system/$TIMER" ]; then
+            systemctl enable --now "$TIMER"
+            echo "✅ 已启用并启动 $TIMER"
+        else
+            echo "⚠️ 定时器文件 $TIMER 不存在，跳过"
+        fi
+    done
+
+    # ----------------------------
     # 重启网络并刷新 systemd
     # ----------------------------
     echo "🔄 重启网络服务..."
     systemctl restart networking
-
-    echo "🔄 重新加载 systemd 配置..."
-    systemctl daemon-reload
-
-    echo "🔄 启用并立即启动 mihomo-update.timer..."
-    if [ -f "/etc/systemd/system/mihomo-update.timer" ]; then
-        systemctl enable --now mihomo-update.timer
-    else
-        echo "⚠️ mihomo-update.timer 文件不存在，跳过"
-    fi
 
     echo "✅ 所有操作完成"
 
