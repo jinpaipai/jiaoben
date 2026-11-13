@@ -115,6 +115,9 @@ if [ $? -eq 0 ]; then
         "aria2.service"
         "komari-agent.service"
         "aimilivpn.service"
+        "ip-sentinel-runner.service"
+        "ip-sentinel-updater.service"
+        "ip-sentinel-report.service"
         "ip-sentinel-agent-daemon.service"
         "ip-sentinel-master.service"
     )
