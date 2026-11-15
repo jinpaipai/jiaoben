@@ -500,13 +500,10 @@ EOF
     chmod 700 "$TASK_DIR/$NAME.sh"
 }
 
-create_task "01_start_mihomo" "start"
-create_task "02_stop_mihomo" "stop"
-create_task "03_restart_mihomo" "restart"
-create_task "04_update_config" "update-config"
-create_task "05_update_core" "update-core"
-create_task "06_check_status" "status"
-create_task "07_view_log" "log"
+create_task "update_config" "update-config"
+create_task "update_core" "update-core"
+create_task "check_status" "status"
+create_task "view_log" "log"
 
 # ==========================================
 # 9. 创建 KernelSU 开机启动脚本
