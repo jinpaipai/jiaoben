@@ -1,4 +1,4 @@
-#    wget -qO- https://raw.githubusercontent.com/jinpaipai/jiaoben/refs/heads/main/install_mihomo.sh | sudo bash
+```bash
 #!/usr/bin/env bash
 set -e
 
@@ -12,7 +12,7 @@ echo "=== mihomo 自动安装脚本（镜像版）==="
 
 # 获取最新 release JSON
 echo "获取最新版本信息..."
-RELEASE_JSON=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest)
+RELEASE_JSON=$(curl -fsSL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest)
 
 # 提取 linux-amd64 gz 链接
 DOWNLOADS=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "linux-amd64" | grep "\.gz" | cut -d '"' -f 4)
@@ -77,7 +77,7 @@ mkdir -p /etc/mihomo
 
 # 创建 systemd 服务
 echo "创建 systemd 服务..."
-cat > /etc/systemd/system/mihomo.service <<EOF
+cat > /etc/systemd/system/mihomo.service <<'EOF'
 [Unit]
 Description=mihomo Daemon, Another Clash Kernel.
 After=network-online.target
@@ -118,9 +118,10 @@ echo "=== mihomo 安装完成 ==="
 systemctl status mihomo --no-pager
 
 # =======================
-# 订阅更新功能
+# 手动订阅更新功能
 # =======================
-read -rp "是否配置订阅更新功能？(y/N): " ENABLE_SUB </dev/tty
+read -rp "是否配置手动订阅更新功能？(y/N): " ENABLE_SUB </dev/tty
+
 if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
     read -rp "请输入你的订阅链接: " SUB_URL </dev/tty
 
@@ -128,6 +129,7 @@ if [[ "$ENABLE_SUB" =~ ^[Yy]$ ]]; then
         echo "❌ 订阅链接为空，跳过配置订阅更新"
     else
         echo "创建 mihomo_subupdate.sh 脚本..."
+
         cat > /usr/local/bin/mihomo_subupdate.sh <<'EOF'
 #!/bin/bash
 
@@ -195,38 +197,41 @@ fi
 exit 0
 EOF
 
-        # 替换订阅链接
-        sed -i "s|__SUB_URL__|$SUB_URL|g" /usr/local/bin/mihomo_subupdate.sh
+        # 安全替换订阅链接
+        export SUB_URL
+        python3 - <<'PY'
+import os
+from pathlib import Path
+
+path = Path("/usr/local/bin/mihomo_subupdate.sh")
+content = path.read_text()
+content = content.replace("__SUB_URL__", os.environ["SUB_URL"])
+path.write_text(content)
+PY
+
         chmod +x /usr/local/bin/mihomo_subupdate.sh
 
-        echo "创建 systemd 服务和定时器..."
-        cat > /etc/systemd/system/mihomo-update.service <<EOF
-[Unit]
-Description=Update mihomo config.yaml
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/mihomo_subupdate.sh
-EOF
-
-        cat > /etc/systemd/system/mihomo-update.timer <<EOF
-[Unit]
-Description=Run mihomo_subupdate script every 30 minutes
-
-[Timer]
-OnCalendar=*:0/30
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-        systemctl daemon-reload
-        systemctl enable --now mihomo-update.timer
-
-        echo "=== 订阅更新功能已启用 ==="
-        systemctl list-timers --all | grep mihomo-update
+        echo "=== 手动订阅更新功能已配置 ==="
+        echo "以后执行以下命令即可手动更新订阅："
+        echo "mihomo_subupdate.sh"
     fi
 fi
 
+# =======================
+# 清理旧版自动更新定时器
+# =======================
+echo "检查并清理旧版自动更新定时器..."
+
+systemctl disable --now mihomo-update.timer 2>/dev/null || true
+systemctl stop mihomo-update.service 2>/dev/null || true
+
+rm -f /etc/systemd/system/mihomo-update.timer
+rm -f /etc/systemd/system/mihomo-update.service
+
+systemctl daemon-reload
+systemctl reset-failed
+
 echo "=== 安装与配置完成 ==="
+echo "Mihomo 主服务：开机自动启动"
+echo "订阅更新：仅支持手动执行 mihomo_subupdate.sh"
+```
