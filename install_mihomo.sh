@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 set -e
 
@@ -7,7 +8,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-echo "=== mihomo 自动安装脚本（镜像版）==="
+echo "=== mihomo 自动安装脚本 ==="
 
 # 获取最新 release JSON
 echo "获取最新版本信息..."
@@ -155,7 +156,7 @@ if [ ! -s "$TMP_FILE" ]; then
 fi
 
 # 检查是否是 HTML 错误页面
-if grep -qiE '<html|<!DOCTYPE|<head|<body|Error code|Cloudflare|502 Bad Gateway|503 Service Unavailable|504 Gateway|522|404 Not Found' "$TMP_FILE"; then
+if grep -qiE '<html|<!DOCTYPE|<head|<body|Error code|502 Bad Gateway|503 Service Unavailable|504 Gateway|522|404 Not Found' "$TMP_FILE"; then
     echo "$(date '+%F %T') 下载内容不是有效配置（疑似错误页面）" | tee -a "$LOG_FILE"
     rm -f "$TMP_FILE"
     exit 1
