@@ -21,11 +21,8 @@ if [ -z "$DOWNLOADS" ]; then
     exit 1
 fi
 
-# 加国内镜像前缀
-MIRRORED_DOWNLOADS=""
-while read -r url; do
-    MIRRORED_DOWNLOADS+=$(echo "https://github.jinpaipai.fun/$url")$'\n'
-done <<< "$DOWNLOADS"
+# 直接使用 GitHub 官方下载地址
+MIRRORED_DOWNLOADS="$DOWNLOADS"
 
 # 存入数组
 URLS=()
