@@ -234,4 +234,3 @@ systemctl reset-failed
 echo "=== 安装与配置完成 ==="
 echo "Mihomo 主服务：开机自动启动"
 echo "订阅更新：仅支持手动执行 mihomo_subupdate.sh"
-```
