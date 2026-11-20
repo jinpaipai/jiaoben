@@ -82,6 +82,8 @@ FILES_TO_BACKUP=(
     "/opt/sub-store"
     "/opt/vault-data"
     "/opt/srs"
+    "/opt/hermes"
+    "/opt/hermes_project"
     "/opt/rewards-dashboard"
     "/opt/suoha"
     "/usr/bin/filebrowser"
